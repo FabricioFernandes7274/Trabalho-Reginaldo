@@ -1,11 +1,10 @@
-
-    
+   
     body {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: linear-gradient(135deg, #0e1521 0%, #1b283e 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -13,7 +12,7 @@
 }
 
 /* Container do menu */
-.menu-container {
+.menu{
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -37,16 +36,16 @@
 .logo-icon {
     width: 80px;
     height: 80px;
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
+    background: linear-gradient( #0f0909, #100d06);
     border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2.5rem;
-    box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 10px 30px rgba(13, 7, 7, 0.3);
 }
 
-.logo-text {
+.nome-logo{
     color: white;
     font-size: 3rem;
     font-weight: bold;
@@ -81,26 +80,26 @@
 
 /* Botão de login */
 .btn-login {
-    background: transparent;
+    background-color: #090303;
     color: white;
-    border: 2px solid white;
+    border: 2px solid rgb(9, 4, 4);
 }
 .btn-login:hover {
     background: white;
-    color: #2a5298;
+    color: #080d17;
     transform: translateY(-3px);
     box-shadow: 0 10px 25px rgba(255, 255, 255, 0.2);
 }
 
 /* Botão de cadastro */
 .btn-register {
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
+    background-color: #090303;
     color: white;
     border: none;
 }
 .btn-register:hover {
     transform: translateY(-3px);
-    box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 15px 35px rgba(85, 71, 71, 0.4);
 }
 
 /* Páginas de login/cadastro */
@@ -110,7 +109,7 @@
     left: 0;
     width: 100%;
     height: 100vh;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: linear-gradient( #060708 0%, #0a0c11 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -119,9 +118,9 @@
 
 /* Formulários */
 .form-container {
-    background: rgba(255, 255, 255, 0.1);
+ background: rgba(0, 0, 0, 0.9); /* quase preto */
+    border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 24px;
     padding: 3rem;
     width: 90%;
@@ -168,6 +167,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+   
 }
 
 .input-group label {
@@ -177,11 +177,11 @@
 }
 
 .input-group input {
-    padding: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(30, 30, 30, 0.9); /* cinza bem escuro */
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
+    padding: 1rem;
+    border-radius: 8px;
     font-size: 1rem;
     transition: all 0.3s ease;
 }
@@ -197,7 +197,7 @@
 }
 
 .btn-primary {
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
+    background: linear-gradient(45deg, #150f0f, #100e0a);
     color: white;
     border: none;
     padding: 1rem;
@@ -209,7 +209,7 @@
 }
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 10px 25px rgba(58, 30, 30, 0.3);
 }
 
 .form-link {

@@ -1,17 +1,17 @@
 function showLogin(event) {
     event.preventDefault();
-    document.querySelector('.menu-container').style.display = 'none';
+    document.querySelector('.menu').style.display = 'none';
     document.getElementById('loginPage').style.display = 'flex';
 }
 
 function showRegister(event) {
     event.preventDefault();
-    document.querySelector('.menu-container').style.display = 'none';
+    document.querySelector('.menu').style.display = 'none';
     document.getElementById('registerPage').style.display = 'flex';
 }
 
 function showMainMenu() {
-    document.querySelector('.menu-container').style.display = 'block';
+    document.querySelector('.menu').style.display = 'block';
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('registerPage').style.display = 'none';
 }

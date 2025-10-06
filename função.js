@@ -1,73 +1,46 @@
-// Abre o modal de login ou cadastro
-function openModal(type) {
-    const modal = document.getElementById("modal");
-    const modalBody = document.getElementById("modal-body");
-
-    // Define o conteúdo do modal conforme o tipo
-    if (type === "login") {
-        modalBody.innerHTML = `
-            <h2>🔑 Fazer Login</h2>
-            <form onsubmit="handleLogin(event)">
-                <label>Email ou Usuário</label>
-                <input type="text" id="loginUser" required placeholder="Digite seu usuário">
-                
-                <label>Senha</label>
-                <input type="password" id="loginPassword" required placeholder="Digite sua senha">
-                
-                <button type="submit">Entrar</button>
-            </form>
-        `;
-    } else if (type === "register") {
-        modalBody.innerHTML = `
-            <h2>✨ Criar Conta</h2>
-            <form onsubmit="handleRegister(event)">
-                <label>Nome Completo</label>
-                <input type="text" id="registerName" required placeholder="Seu nome completo">
-                
-                <label>Email</label>
-                <input type="email" id="registerEmail" required placeholder="Seu email">
-                
-                <label>Usuário</label>
-                <input type="text" id="registerUsername" required placeholder="Nome de usuário">
-                
-                <label>Senha</label>
-                <input type="password" id="registerPassword" required placeholder="Crie uma senha">
-                
-                <button type="submit">Criar Conta</button>
-            </form>
-        `;
-    }
-
-    modal.style.display = "flex";
+function showLogin(event) {
+    event.preventDefault();
+    document.querySelector('.menu-container').style.display = 'none';
+    document.getElementById('loginPage').style.display = 'flex';
 }
 
-// Fecha o modal
-function closeModal() {
-    document.getElementById("modal").style.display = "none";
+function showRegister(event) {
+    event.preventDefault();
+    document.querySelector('.menu-container').style.display = 'none';
+    document.getElementById('registerPage').style.display = 'flex';
 }
 
-// Simula login
+function showMainMenu() {
+    document.querySelector('.menu-container').style.display = 'block';
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('registerPage').style.display = 'none';
+}
+
 function handleLogin(event) {
     event.preventDefault();
-    const user = document.getElementById("loginUser").value;
-    alert(`Bem-vindo, ${user}! Login realizado com sucesso! 🎮`);
-    closeModal();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    if (email && password) {
+        alert(`✅ Login realizado com sucesso!\n\nBem-vindo de volta, ${email}!`);
+        showMainMenu();
+    }
 }
 
-// Simula cadastro
 function handleRegister(event) {
     event.preventDefault();
-    const name = document.getElementById("registerName").value;
-    alert(`Conta criada com sucesso, ${name}! 🎉`);
-    closeModal();
+    const name = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (password !== confirmPassword) {
+        alert('❌ As senhas não coincidem!');
+        return;
+    }
+    
+    if (name && email && password) {
+        alert(`✅ Conta criada com sucesso!\n\nBem-vindo ao GameZone, ${name}!`);
+        showMainMenu();
+    }
 }
-
-// Fecha o modal clicando fora dele
-document.getElementById("modal").addEventListener("click", (e) => {
-    if (e.target.id === "modal") closeModal();
-});
-
-// Fecha o modal ao apertar ESC
-document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeModal();
-});

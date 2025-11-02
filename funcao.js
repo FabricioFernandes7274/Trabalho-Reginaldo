@@ -99,6 +99,22 @@ function logout(){
     showMainMenu();
 }
 
+function resetDemo(){
+    // remove chaves que começam com 'gs_'
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('gs_'));
+    keys.forEach(k => localStorage.removeItem(k));
+    showToast('Demo resetado — dados limpos.', 'info');
+    // atualizar UI
+    setCurrentUser(null);
+    updateAuthButtons();
+    updateCartBadge();
+    // fechar possíveis modais
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(p => p.style.display = 'none');
+    // garantir que a página de cadastro abra novamente
+    showRegister();
+}
+
 async function handleLogin(event) {
     event.preventDefault();
     const identifier = document.getElementById('loginEmail').value.trim();
@@ -187,7 +203,21 @@ function initPage(){
 }
 
 // garantir que os botões estejam corretos também se o script for carregado depois do DOM
-document.addEventListener('DOMContentLoaded', updateAuthButtons);
+document.addEventListener('DOMContentLoaded', () => {
+    updateAuthButtons();
+    // garantir que os formulários usem os handlers corretos (mais robusto que onsubmit inline)
+    const regForm = document.querySelector('#registerPage form.auth-form');
+    if (regForm) {
+        // remover handler inline se existir
+        regForm.removeAttribute('onsubmit');
+        regForm.addEventListener('submit', handleRegister);
+    }
+    const loginForm = document.querySelector('#loginPage form.auth-form');
+    if (loginForm) {
+        loginForm.removeAttribute('onsubmit');
+        loginForm.addEventListener('submit', handleLogin);
+    }
+});
 
 /* -------------------- Toasts estilizados -------------------- */
 function ensureToastContainer(){

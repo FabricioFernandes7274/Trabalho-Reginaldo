@@ -101,6 +101,8 @@
 .btn-register:hover {
     transform: translateY(-3px);
     box-shadow: 0 15px 35px rgba(85, 71, 71, 0.4);
+    background: white;
+    color: #080d17;
 }
 
 /* Páginas de login/cadastro */

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
+    <link rel="stylesheet" href="cadastro.css">
+</head>
+<body>
+    <!-- Menu principal -->
+    <div class="menu">
+        <div class="logo">
+            <div class="logo-icon">🎮</div>
+            <h1 class="nome-logo">Game</h1>
+        </div>
+        
+        <div class="auth-section">
+            <div class="auth-buttons">
+                <a href="#" class="btn btn-login" onclick="showLogin(event)">Fazer Login</a>
+                <a href="#" class="btn btn-register" onclick="showRegister(event)">Criar Conta</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Página de Login -->
+    <div id="loginPage" class="page" style="display: none;">
+        <div class="form-container">
+            <div class="form-header">
+                <button class="back-btn" onclick="showMainMenu()">Voltar</button>
+                <h2>Fazer Login</h2>
+            </div>
+            
+            <form class="auth-form" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label for="loginEmail">Email ou Usuário</label>
+                    <input type="text" id="loginEmail" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="loginPassword">Senha</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Entrar</button>
+                
+                <p class="form-link">
+                    Não tem conta? <a href="#" onclick="showRegister(event)">Criar conta</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Página de Cadastro -->
+    <div id="registerPage" class="page" style="display: none;">
+        <div class="form-container">
+            <div class="form-header">
+                <button class="back-btn" onclick="showMainMenu()">← Voltar</button>
+                <h2>Criar Conta</h2>
+            </div>
+            
+            <form class="auth-form" onsubmit="handleRegister(event)">
+                <div class="input-group">
+                    <label for="registerName">Nome Completo</label>
+                    <input type="text" id="registerName" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="registerPassword">Senha</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="confirmPassword">Confirmar Senha</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Criar Conta</button>
+                
+                <p class="form-link">
+                    Já tem conta? <a href="#" onclick="showLogin(event)">Fazer login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script src="funcao.js"></script>
+</body>
+</html>

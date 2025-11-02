@@ -1,27 +1,28 @@
    
     body {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #0e1521 0%, #1b283e 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #2b2b2b; /* fundo cinza escuro */
+        color: #d0d0d0; /* cor neutra para textos */
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
 
 /* Container do menu */
 .menu{
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 24px;
-    padding: 3rem;
-    text-align: center;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-    width: 90%;
-    max-width: 800px;
+    background: rgba(40, 40, 40, 0.7);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
 }
 
 /* Logo */
@@ -46,10 +47,10 @@
 }
 
 .nome-logo{
-    color: white;
-    font-size: 3rem;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    color: #e6e6e6;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
 }
 
 /* Botões de autenticação */
@@ -262,4 +263,52 @@
     .form-header h2 {
         font-size: 1.5rem;
     }
+}
+
+/* ===== Estilos da loja ===== */
+.store-topbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+.search-bar input[type="search"]{
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.03);
+    color: inherit;
+    width: 320px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1rem;
+    margin-left: 1rem;
+}
+.nav-links a{ color: #cfcfcf; text-decoration:none; font-weight:600; }
+
+.store-wrap{ display: flex; gap: 1.5rem; width: 100%; padding: 2rem; }
+.sidebar{ width: 220px; background: rgba(255,255,255,0.03); padding:1rem; border-radius:8px; }
+.sidebar h3{ margin-top:0; }
+.sidebar ul{ list-style: none; padding:0; margin:0; }
+.sidebar li{ margin:0.6rem 0; }
+.sidebar a{ color: #d0d0d0; text-decoration:none; }
+
+.main-content{ flex:1; }
+.hero{ background: linear-gradient(90deg, rgba(80,80,80,0.12), rgba(0,0,0,0.2)); padding:1.2rem; border-radius:10px; margin-bottom:1rem; }
+.hero-info h2{ margin:0 0 0.4rem 0; }
+
+.store-grid{ display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap:1rem; }
+.game-card{ background: rgba(0,0,0,0.45); padding:1rem; border-radius:10px; text-align:center; }
+.game-card .thumb{ background: #222; height:120px; border-radius:6px; margin-bottom:0.8rem; display:flex; align-items:center; justify-content:center; color:#999; }
+.game-card h4{ margin:0.4rem 0; font-size:1rem; }
+.game-card .price{ color:#e8e8e8; font-weight:700; }
+.card-actions{ display:flex; gap:0.5rem; justify-content:center; margin-top:0.8rem; }
+
+/* Ajustes responsivos */
+@media (max-width: 900px){
+    .store-wrap{ flex-direction:column; padding:1rem; }
+    .sidebar{ width:100%; order:2; }
 }

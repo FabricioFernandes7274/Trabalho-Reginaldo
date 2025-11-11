@@ -1,0 +1,49 @@
+/* Estilos compartilhados para páginas de categoria */
+body.category-page {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #eef2f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+.category-header{
+    padding: 1rem 2rem;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+}
+.category-title{ font-size:1.6rem; font-weight:700; margin:0; }
+.category-hero{
+    padding:2rem;
+    border-radius:12px;
+    margin:1rem 2rem;
+}
+.category-grid{ display:grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap:1rem; padding:0 2rem 2rem 2rem; }
+.game-card{ background: rgba(0,0,0,0.28); padding:1rem; border-radius:10px; text-align:center; }
+.game-card .thumb{ height:110px; border-radius:6px; margin-bottom:0.8rem; display:flex; align-items:center; justify-content:center; color:#fff; }
+
+/* Schemes (predominant color + harmonious accents) */
+.scheme-luta    .category-hero{ background: linear-gradient(135deg,#6b0f0f,#c0392b);} /* vermelho */
+.scheme-gestao  .category-hero{ background: linear-gradient(135deg,#154406,#2ecc71);} /* verde */
+.scheme-aventura .category-hero{ background: linear-gradient(135deg,#0f3b66,#3498db);} /* azul */
+.scheme-esporte .category-hero{ background: linear-gradient(135deg,#f39c12,#f1c40f);} /* amarelo */
+.scheme-visual-novel .category-hero{ background: linear-gradient(135deg,#ff7ab6,#ff4da6);} /* rosa */
+.scheme-terror .category-hero{ background: linear-gradient(135deg,#2b0b2b,#6a0f6a);} /* roxo */
+.scheme-plataforma .category-hero{ background: linear-gradient(135deg,#0abdcf,#08a4b0);} /* ciano */
+.scheme-drama .category-hero{ background: linear-gradient(135deg,#6b3b1f,#8e5a3a);} /* marrom */
+.scheme-infantil .category-hero{ background: linear-gradient(135deg,#e2c2ff,#cba0ff);} /* lilas */
+.scheme-carros .category-hero{ background: linear-gradient(135deg,#ff7a24,#ff8f43);} /* laranja */
+.scheme-estrategia .category-hero{ background: linear-gradient(135deg,#7f8c8d,#95a5a6);} /* cinza */
+.scheme-mundoaberto .category-hero{ background: linear-gradient(135deg,#0b2244,#08335a);} /* azul escuro */
+.scheme-indies .category-hero{ background: linear-gradient(135deg,#ff8a00,#e91e63,#3f51b5,#00bcd4); background-size: 400% 400%; animation: indieShift 8s ease infinite; }
+
+@keyframes indieShift{
+    0%{ background-position:0% 50% }
+    50%{ background-position:100% 50% }
+    100%{ background-position:0% 50% }
+}
+
+.page-back{ background: transparent; border:1px solid rgba(255,255,255,0.12); color: #fff; padding:0.6rem 1rem; border-radius:8px; text-decoration:none; }
+.category-hero p{ margin:0.6rem 0 0 0; color: rgba(255,255,255,0.92); }

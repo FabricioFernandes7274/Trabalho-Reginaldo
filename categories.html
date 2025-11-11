@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Categoria — GameStore</title>
+    <link rel="stylesheet" href="cadastro.css">
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="categories.css">
+</head>
+<body id="category-root" class="category-page">
+    <header class="category-header">
+        <div style="display:flex;align-items:center;gap:1rem;"><div class="logo-icon">🎮</div><h1 id="category-title" class="category-title">Categoria</h1></div>
+        <div><a class="page-back" href="index.html">← Voltar à Loja</a></div>
+    </header>
+    <section id="category-hero" class="category-hero">
+        <h2 id="category-h2">Título</h2>
+        <p id="category-desc">Descrição</p>
+    </section>
+    <section id="category-grid" class="category-grid"></section>
+
+    <script src="categories-data.js"></script>
+    <script>
+        function qs(key){
+            const params = new URLSearchParams(location.search);
+            return params.get(key);
+        }
+        const catKey = qs('cat') || 'indies';
+        const cat = getCategory(catKey);
+        const root = document.getElementById('category-root');
+        if (!cat){
+            document.getElementById('category-title').textContent = 'Categoria não encontrada';
+            document.getElementById('category-h2').textContent = '';
+            document.getElementById('category-desc').textContent = '';
+        } else {
+            // set scheme class on body
+            root.className = 'category-page ' + cat.scheme;
+            document.getElementById('category-title').textContent = cat.title;
+            document.getElementById('category-h2').textContent = cat.title;
+            document.getElementById('category-desc').textContent = cat.description;
+            const grid = document.getElementById('category-grid');
+            grid.innerHTML = '';
+            cat.games.forEach(g=>{
+                const a = document.createElement('article'); a.className = 'game-card';
+                const thumb = document.createElement('div'); thumb.className = 'thumb'; thumb.style.background = 'linear-gradient(135deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12))';
+                thumb.textContent = 'Thumb';
+                const h = document.createElement('h4'); h.textContent = g.title;
+                const p = document.createElement('p'); p.className = 'price'; p.textContent = g.price ? `R$ ${g.price.toFixed(2)}` : 'Grátis';
+                const actions = document.createElement('div'); actions.className = 'card-actions';
+                const buy = document.createElement('button'); buy.className = 'btn btn-primary'; buy.textContent = g.price && g.price>0 ? 'Comprar' : 'Instalar';
+                buy.addEventListener('click', ()=> addToCart(g.title, g.price || 0));
+                const details = document.createElement('button'); details.className='btn'; details.textContent = 'Detalhes'; details.addEventListener('click', ()=> alert('Detalhes: '+g.title));
+                actions.appendChild(buy); actions.appendChild(details);
+                a.appendChild(thumb); a.appendChild(h); a.appendChild(p); a.appendChild(actions);
+                grid.appendChild(a);
+            });
+        }
+    </script>
+</body>
+</html>

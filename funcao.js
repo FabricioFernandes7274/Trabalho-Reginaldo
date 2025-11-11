@@ -100,19 +100,81 @@ function logout(){
 }
 
 function resetDemo(){
-    // remove chaves que começam com 'gs_'
-    const keys = Object.keys(localStorage).filter(k => k.startsWith('gs_'));
-    keys.forEach(k => localStorage.removeItem(k));
-    showToast('Demo resetado — dados limpos.', 'info');
-    // atualizar UI
-    setCurrentUser(null);
-    updateAuthButtons();
-    updateCartBadge();
-    // fechar possíveis modais
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(p => p.style.display = 'none');
-    // garantir que a página de cadastro abra novamente
-    showRegister();
+    // usar modal de confirmação (implementado abaixo)
+    showConfirm('Tem certeza que deseja resetar o demo? Isso irá apagar os dados salvos localmente (carrinho, contas de teste etc.).')
+        .then(ok => {
+            if (!ok) return;
+            // remove chaves que começam com 'gs_'
+            const keys = Object.keys(localStorage).filter(k => k.startsWith('gs_'));
+            keys.forEach(k => localStorage.removeItem(k));
+            showToast('Demo resetado — dados limpos.', 'info');
+            // atualizar UI
+            setCurrentUser(null);
+            updateAuthButtons();
+            updateCartBadge();
+            // fechar possíveis modais
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => p.style.display = 'none');
+            // abrir a tela de cadastro para facilitar re-teste
+            showRegister();
+        });
+}
+
+// Modal de confirmação estilizado. Retorna Promise<boolean>.
+function showConfirm(message){
+    return new Promise(resolve => {
+        // container
+        let overlay = document.getElementById('confirm-overlay');
+        if (!overlay){
+            overlay = document.createElement('div');
+            overlay.id = 'confirm-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = 0; overlay.style.left = 0; overlay.style.right = 0; overlay.style.bottom = 0;
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.background = 'rgba(0,0,0,0.45)';
+            overlay.style.zIndex = 99999;
+            // dialog
+            const dialog = document.createElement('div');
+            dialog.style.background = 'linear-gradient(180deg, #0f1113, #111214)';
+            dialog.style.border = '1px solid rgba(255,255,255,0.06)';
+            dialog.style.padding = '1.2rem';
+            dialog.style.borderRadius = '10px';
+            dialog.style.minWidth = '320px';
+            dialog.style.boxShadow = '0 12px 40px rgba(0,0,0,0.6)';
+            // message
+            const msg = document.createElement('p');
+            msg.textContent = message;
+            msg.style.margin = '0 0 1rem 0';
+            msg.style.color = '#eee';
+            // actions
+            const actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.justifyContent = 'flex-end';
+            actions.style.gap = '0.6rem';
+            const btnCancel = document.createElement('button');
+            btnCancel.className = 'btn';
+            btnCancel.textContent = 'Cancelar';
+            const btnOk = document.createElement('button');
+            btnOk.className = 'btn btn-primary';
+            btnOk.textContent = 'Confirmar';
+            actions.appendChild(btnCancel);
+            actions.appendChild(btnOk);
+            dialog.appendChild(msg);
+            dialog.appendChild(actions);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            // handlers
+            btnCancel.addEventListener('click', ()=>{ overlay.remove(); resolve(false); });
+            btnOk.addEventListener('click', ()=>{ overlay.remove(); resolve(true); });
+        } else {
+            // já existe: usar prompt simples
+            const ok = confirm(message);
+            resolve(ok);
+        }
+    });
 }
 
 async function handleLogin(event) {
@@ -136,6 +198,9 @@ async function handleLogin(event) {
             setCurrentUser({ name: user.name, email: user.email });
             showToast(`✅ Login realizado com sucesso! Bem-vindo de volta, ${user.name}!`, 'success');
             showMainMenu();
+            // limpar campos do formulário de login para não manter dados visíveis
+            const loginForm = document.querySelector('#loginPage form.auth-form');
+            if (loginForm) loginForm.reset();
             return;
         }
     } else {
@@ -152,6 +217,9 @@ async function handleLogin(event) {
             setCurrentUser({ name: user.name, email: user.email });
             showToast(`✅ Login realizado com sucesso! Bem-vindo de volta, ${user.name}!`, 'success');
             showMainMenu();
+            // limpar campos do formulário de login para não manter dados visíveis
+            const loginForm = document.querySelector('#loginPage form.auth-form');
+            if (loginForm) loginForm.reset();
             return;
         }
     }
@@ -187,7 +255,10 @@ async function handleRegister(event) {
 
     setCurrentUser({ name: newUser.name, email: newUser.email });
     showToast(`✅ Conta criada com sucesso! Bem-vindo ao GameZone, ${name}!`, 'success');
+    // fechar modal e limpar campos do formulário de registro para não manter dados visíveis
     showMainMenu();
+    const regForm = document.querySelector('#registerPage form.auth-form');
+    if (regForm) regForm.reset();
 }
 
 function initPage(){

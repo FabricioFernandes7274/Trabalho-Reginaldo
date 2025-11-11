@@ -14,7 +14,7 @@
 
 /* Botões dentro dos cards ficam um pouco menores também */
 .store-grid .btn {
-    padding: 0.45rem 0.8rem;
+    padding: 0.3rem 0.6rem;
     font-size: 0.95rem;
 }
 
@@ -99,4 +99,63 @@
     0%{ transform: scale(1); }
     40%{ transform: scale(1.35); }
     100%{ transform: scale(1); }
+}
+
+/* ===== Fix: evitar que botões ultrapassem o card ===== */
+/* Torna o card um flex column e empurra ações para baixo; permite quebra de botões */
+.game-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-height: 180px; /* ajustar se quiser cards mais altos */
+}
+
+.game-card .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;      /* permite que os botões quebrem linha em telas pequenas */
+    align-items: center;
+    margin-top: auto;     /* empurra as ações para a base do card */
+    width: 100%;
+}
+
+.game-card .card-actions .btn {
+    flex: 0 1 auto;       /* não força encolhimento exagerado */
+    white-space: nowrap;  /* evita quebra no meio do texto do botão */
+}
+
+/* Garante que a thumb não estoure o card */
+.store-grid .thumb {
+    width: 100%;
+    max-height: 140px;
+    overflow: hidden;
+    display: block;
+    object-fit: cover;
+}
+/* aprimorar thumb: manter proporção, cover e overlay suave */
+.game-card .thumb{
+    height: 0;
+    padding-bottom: 56%; /* aspect ratio ~16:9 */
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+    margin-bottom: 0.8rem;
+    position: relative;
+    color: #fff;
+    overflow: hidden;
+    box-shadow: inset 0 -30px 40px rgba(0,0,0,0.45);
+}
+.game-card .thumb::after{
+    content: '';
+    position: absolute; left:0; right:0; top:0; bottom:0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.04), rgba(0,0,0,0.32));
+}
+
+/* Ajuste responsivo: reduz levemente padding/fonte dos botões em telas estreitas */
+@media (max-width: 520px) {
+    .store-grid .btn {
+        font-size: 0.9rem;
+        padding: 0.35rem 0.5rem;
+    }
 }

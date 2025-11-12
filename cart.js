@@ -99,4 +99,5 @@
     window.renderCart = Cart.renderCart;
     window.checkout = Cart.checkout;
     window.getCart = Cart.getCart;
+    window.openCart = Cart.openCart;
 })(window);

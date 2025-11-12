@@ -919,4 +919,3 @@ function handleAddGameSubmit(ev){
         try{ renderGameCard(game); }catch(e){ /* fallback silencioso */ }
     }catch(e){ console.error('Erro ao adicionar jogo', e); showToast('Erro ao adicionar jogo', 'error'); }
 }
-

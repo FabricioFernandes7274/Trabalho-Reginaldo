@@ -45,5 +45,17 @@
         return Array.from(new Uint8Array(derived)).map(b=>b.toString(16).padStart(2,'0')).join('');
     };
 
+    // constant-time string comparison to reduce timing attacks (best-effort for demo)
+    CryptoUtils.constantTimeEqual = function(a, b){
+        try{
+            if (typeof a !== 'string' || typeof b !== 'string') return false;
+            const la = a.length; const lb = b.length;
+            if (la !== lb) return false;
+            let res = 0;
+            for (let i=0;i<la;i++){ res |= a.charCodeAt(i) ^ b.charCodeAt(i); }
+            return res === 0;
+        }catch(e){ return false; }
+    };
+
     window.CryptoUtils = CryptoUtils;
 })(window);

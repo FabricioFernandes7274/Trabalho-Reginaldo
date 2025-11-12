@@ -20,6 +20,9 @@
     <section id="category-grid" class="category-grid"></section>
 
     <script src="categories-data.js"></script>
+    <script src="crypto.js"></script>
+    <script src="cartLogic.js"></script>
+    <script src="funcao.js"></script>
     <script>
         function qs(key){
             const params = new URLSearchParams(location.search);
@@ -62,8 +65,8 @@
                 const p = document.createElement('p'); p.className = 'price'; p.textContent = g.price ? `R$ ${g.price.toFixed(2)}` : 'Grátis';
                 const actions = document.createElement('div'); actions.className = 'card-actions';
                 const buy = document.createElement('button'); buy.className = 'btn btn-primary'; buy.textContent = g.price && g.price>0 ? 'Comprar' : 'Instalar';
-                buy.addEventListener('click', ()=> addToCart(g.title, g.price || 0));
-                    const details = document.createElement('button'); details.className='btn'; details.textContent = 'Detalhes'; details.addEventListener('click', ()=> showDetails(g.title, g.price || 0, g.image || null, g.description || ''));
+                buy.addEventListener('click', ()=> addToCart(g.id, g.title, g.price || 0, g.image || null));
+                    const details = document.createElement('button'); details.className='btn'; details.textContent = 'Detalhes'; details.addEventListener('click', ()=> showDetails(g.id, g.title, g.price || 0, g.image || null, g.description || ''));
                 actions.appendChild(buy); actions.appendChild(details);
                 a.appendChild(thumb); a.appendChild(h); a.appendChild(p); a.appendChild(actions);
                 grid.appendChild(a);

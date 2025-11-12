@@ -16,7 +16,7 @@
     <header class="menu" role="banner">
             <div class="logo" style="justify-content:flex-start; gap:1rem;">
             <div class="logo-icon">🎮</div>
-            <h1 class="nome-logo" data-i18n="brand">GameStore</h1>
+            <h1 class="nome-logo">GameStore</h1>
         </div>
 
         <button id="hamburgerBtn" class="btn" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar" onclick="document.body.classList.toggle('sidebar-open')">☰</button>
@@ -27,10 +27,10 @@
             </div>
 
             <nav class="nav-links">
-                <a href="#" data-i18n="nav.store">Loja</a>
-                <a href="#" data-i18n="nav.new">Novidades</a>
-                <a href="#" data-i18n="nav.indie">Indie</a>
-                <a href="#" data-i18n="nav.deals">Ofertas</a>
+                <a href="#">Loja</a>
+                <a href="#">Novidades</a>
+                <a href="#">Indie</a>
+                <a href="#">Ofertas</a>
             </nav>
 
             <div style="display:flex;align-items:center;gap:0.6rem;">
@@ -47,17 +47,13 @@
                                 <circle cx="18" cy="20" r="1" fill="currentColor"/>
                             </svg>
                         </span>
-                        <span class="cart-text" data-i18n="cart">Carrinho</span>
+                        <span class="cart-text">Carrinho</span>
                         <span class="cart-badge">0</span>
                     </button>
                     <div id="miniCart" class="mini-cart" aria-hidden="true" style="display:none; position:absolute; right:0; top:40px; background:rgba(10,10,10,0.95); padding:0.6rem; border-radius:8px; width:280px; box-shadow:0 8px 30px rgba(0,0,0,0.6); z-index:2200;"></div>
                 </div>
                 <button class="btn" onclick="openFeedback()" title="Enviar feedback" aria-label="Enviar feedback">Feedback</button>
                 <button class="btn" onclick="resetDemo()" title="Reset demo (limpa dados)" aria-label="Reset demo">Reset demo</button>
-                <select id="langSelect" aria-label="Selecionar idioma" style="margin-left:0.6rem; background:transparent; border:1px solid rgba(255,255,255,0.06); color:inherit; padding:0.25rem 0.5rem; border-radius:6px;">
-                    <option value="pt-BR">PT-BR</option>
-                    <option value="en">EN</option>
-                </select>
             </div>
         </div>
     </header>
@@ -98,8 +94,8 @@
                     <h4>Cyber Runner</h4>
                     <p class="price">R$ 39,90</p>
                     <div class="card-actions">
-                            <button class="btn btn-primary" onclick="addToCart('Cyber Runner',39.90)">Comprar</button>
-                            <button class="btn" onclick="showDetails('Cyber Runner',39.90,'https://via.placeholder.com/640x360?text=Cyber+Runner','Um jogo de corrida cyberpunk.')" aria-label="Detalhes do Cyber Runner">Detalhes</button>
+                            <button class="btn btn-primary" onclick="addToCart('sample-cyber-runner','Cyber Runner',39.90,'https://via.placeholder.com/640x360?text=Cyber+Runner')">Comprar</button>
+                            <button class="btn" onclick="showDetails('sample-cyber-runner','Cyber Runner',39.90,'https://via.placeholder.com/640x360?text=Cyber+Runner','Um jogo de corrida cyberpunk.')" aria-label="Detalhes do Cyber Runner">Detalhes</button>
                     </div>
                 </article>
 
@@ -110,8 +106,8 @@
                     <h4>Dungeon Quest</h4>
                     <p class="price">R$ 59,90</p>
                     <div class="card-actions">
-                            <button class="btn btn-primary" onclick="addToCart('Dungeon Quest',59.90)">Comprar</button>
-                            <button class="btn" onclick="showDetails('Dungeon Quest',59.90,'https://via.placeholder.com/640x360?text=Dungeon+Quest','Aventure-se por dungeons geradas.')" aria-label="Detalhes do Dungeon Quest">Detalhes</button>
+                            <button class="btn btn-primary" onclick="addToCart('sample-dungeon-quest','Dungeon Quest',59.90,'https://via.placeholder.com/640x360?text=Dungeon+Quest')">Comprar</button>
+                            <button class="btn" onclick="showDetails('sample-dungeon-quest','Dungeon Quest',59.90,'https://via.placeholder.com/640x360?text=Dungeon+Quest','Aventure-se por dungeons geradas.')" aria-label="Detalhes do Dungeon Quest">Detalhes</button>
                     </div>
                 </article>
 
@@ -122,8 +118,8 @@
                     <h4>Indie Puzzle</h4>
                     <p class="price">Grátis</p>
                     <div class="card-actions">
-                            <button class="btn btn-primary" onclick="addToCart('Indie Puzzle',0)">Instalar</button>
-                            <button class="btn" onclick="showDetails('Indie Puzzle',0,'https://via.placeholder.com/640x360?text=Indie+Puzzle','Puzzle relaxante e criativo.')" aria-label="Detalhes do Indie Puzzle">Detalhes</button>
+                            <button class="btn btn-primary" onclick="addToCart('sample-indie-puzzle','Indie Puzzle',0,'https://via.placeholder.com/640x360?text=Indie+Puzzle')">Instalar</button>
+                            <button class="btn" onclick="showDetails('sample-indie-puzzle','Indie Puzzle',0,'https://via.placeholder.com/640x360?text=Indie+Puzzle','Puzzle relaxante e criativo.')" aria-label="Detalhes do Indie Puzzle">Detalhes</button>
                     </div>
                 </article>
 
@@ -134,8 +130,8 @@
                     <h4>Racer X</h4>
                     <p class="price">R$ 19,90</p>
                     <div class="card-actions">
-                            <button class="btn btn-primary" onclick="addToCart('Racer X',19.90)">Comprar</button>
-                            <button class="btn" onclick="showDetails('Racer X',19.90,'https://via.placeholder.com/640x360?text=Racer+X','Corridas intensas em pistas futuristas.')" aria-label="Detalhes do Racer X">Detalhes</button>
+                            <button class="btn btn-primary" onclick="addToCart('carros-0','Racer X',19.90,'https://via.placeholder.com/640x360?text=Racer+X')">Comprar</button>
+                            <button class="btn" onclick="showDetails('carros-0','Racer X',19.90,'https://via.placeholder.com/640x360?text=Racer+X','Corridas intensas em pistas futuristas.')" aria-label="Detalhes do Racer X">Detalhes</button>
                     </div>
                 </article>
             </section>
@@ -211,6 +207,8 @@
         </div>
     </div>
 
+    <script src="crypto.js"></script>
+    <script src="cartLogic.js"></script>
     <script src="funcao.js"></script>
 </body>
 </html>

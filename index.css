@@ -65,6 +65,9 @@
 .cart-item-left{ display:flex; flex-direction:column; text-align:left; }
 .cart-item-right{ display:flex; gap:0.5rem; align-items:center; }
 .cart-qty{ font-size:0.9rem; color: #cfcfcf; }
+/* thumbnail inside cart list */
+.cart-thumb{ margin-right:0.8rem; flex: 0 0 auto; }
+.cart-item-info{ flex:1 1 auto; text-align:left; }
 
 /* badge do carrinho */
 .cart-btn{ position: relative; display: inline-flex; align-items:center; gap:0.4rem; padding-right:1.6rem; }

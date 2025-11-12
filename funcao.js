@@ -26,7 +26,30 @@ function setCurrentUser(user) {
     if (!user) {
         localStorage.removeItem('gs_currentUser');
     } else {
+        // setar usuário atual
         localStorage.setItem('gs_currentUser', JSON.stringify(user));
+        // migrar itens do carrinho de convidado para a conta do usuário (se houver)
+        try{
+            const guestKey = 'gs_cart_guest';
+            const guest = JSON.parse(localStorage.getItem(guestKey) || '[]');
+            if (guest && guest.length){
+                const userKey = `gs_cart_${user.email}`;
+                const existing = JSON.parse(localStorage.getItem(userKey) || '[]');
+                // combinar por productId quando disponível, fallback para título (soma qty)
+                guest.forEach(gItem => {
+                    const found = existing.find(e => (gItem.productId && e.productId === gItem.productId) || e.title === gItem.title);
+                    if (found) {
+                        found.qty = (found.qty || 0) + (gItem.qty || 0);
+                        if (gItem.image) found.image = found.image || gItem.image;
+                        if (gItem.productId) found.productId = found.productId || gItem.productId;
+                    }
+                    else existing.push(gItem);
+                });
+                localStorage.setItem(userKey, JSON.stringify(existing));
+                localStorage.removeItem(guestKey);
+                showToast('Itens do carrinho do convidado adicionados à sua conta.', 'info');
+            }
+        }catch(e){/* não fatal */}
     }
     updateAuthButtons();
     updateCartBadge();
@@ -38,25 +61,14 @@ function updateAuthButtons() {
     nodes.forEach(container => {
         if (user) {
             container.innerHTML = `
-                <span class="user-greet" style="margin-right:0.6rem; font-weight:600;">${t('auth.greeting') || 'Olá'}, ${escapeHtml(user.name)}</span>
-                <button class="btn" onclick="openProfile()">${t('auth.profile') || 'Perfil'}</button>
-                <button class="btn cart-btn" onclick="openCart()">
-                    <span class="cart-icon">
-                        <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                            <path d="M7 4h-2l-1 2h2l3.6 7.59-1.35 2.45C8.89 16.37 9.3 17 10 17h7v-2h-6.42c-.14 0-.25-.11-.25-.25l.03-.12L16.1 9H20V7h-4.21l-1.45-3H7z" fill="currentColor"/>
-                            <circle cx="10" cy="20" r="1" fill="currentColor"/>
-                            <circle cx="18" cy="20" r="1" fill="currentColor"/>
-                        </svg>
-                    </span>
-                    <span class="cart-text">${t('cart') || 'Carrinho'}</span>
-                    <span class="cart-badge">0</span>
-                </button>
-                <button class="btn" onclick="logout()">${t('auth.logout') || 'Sair'}</button>
+                <span class="user-greet" style="margin-right:0.6rem; font-weight:600;">Olá, ${escapeHtml(user.name)}</span>
+                <button class="btn" onclick="openProfile()">Perfil</button>
+                <button class="btn" onclick="logout()">Sair</button>
             `;
         } else {
             container.innerHTML = `
-                <a href="#" class="btn btn-login" onclick="showLogin(event)">${t('auth.login') || 'Entrar'}</a>
-                <a href="#" class="btn btn-register" onclick="showRegister(event)">${t('auth.register') || 'Criar Conta'}</a>
+                <a href="#" class="btn btn-login" onclick="showLogin(event)">Entrar</a>
+                <a href="#" class="btn btn-register" onclick="showRegister(event)">Criar Conta</a>
             `;
         }
     });
@@ -68,8 +80,7 @@ function escapeHtml(str){
     return String(str).replace(/[&<>\"'`]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;","`":"&#96;"}[s]));
 }
 
-/* Optional server integration: set to '' to keep localStorage-only. Example: 'http://localhost:5000' */
-const SERVER_URL = '';
+/* Server integration removed for prototype. */
 const ANALYTICS_URL = '';
 
 /* Accessibility: remember last focused element when opening modals */
@@ -217,7 +228,7 @@ async function handleLogin(event) {
     if (salt) {
         // suportar PBKDF2 quando disponível (users may have iterations)
         if (users[idx].iterations) {
-            const h = await derivePBKDF2(password, salt, users[idx].iterations);
+            const h = await CryptoUtils.derivePBKDF2(password, salt, users[idx].iterations);
             if (h === storedHash) {
                 setCurrentUser({ name: user.name, email: user.email });
                 showToast(`✅ Login realizado com sucesso! Bem-vindo de volta, ${user.name}!`, 'success');
@@ -226,7 +237,7 @@ async function handleLogin(event) {
                 return;
             }
         } else {
-            const h = await hashWithSalt(salt, password);
+            const h = await CryptoUtils.hashWithSalt(salt, password);
             if (h === storedHash) {
             setCurrentUser({ name: user.name, email: user.email });
             showToast(`✅ Login realizado com sucesso! Bem-vindo de volta, ${user.name}!`, 'success');
@@ -239,13 +250,13 @@ async function handleLogin(event) {
         }
     } else {
         // sem salt: pode ser hash sem salt ou texto puro
-        const hashNoSalt = await hashPassword(password);
+        const hashNoSalt = await CryptoUtils.hashPassword(password);
         if (storedHash === hashNoSalt || storedHash === password) {
             // fazer upgrade para salt
             // fazer upgrade para PBKDF2
-            const newSalt = generateSalt();
+            const newSalt = CryptoUtils.generateSalt();
             const iterations = 100000; // PBKDF2 iterations for client-side demo
-            const newHash = await derivePBKDF2(password, newSalt, iterations);
+            const newHash = await CryptoUtils.derivePBKDF2(password, newSalt, iterations);
             users[idx].salt = newSalt;
             users[idx].passwordHash = newHash;
             users[idx].iterations = iterations;
@@ -284,23 +295,14 @@ async function handleRegister(event) {
     const exists = users.some(u => u.email === email);
     if (exists) { showToast('Já existe uma conta com esse email. Faça login ou use outro email.', 'error'); return; }
 
-    const salt = generateSalt();
+    const salt = CryptoUtils.generateSalt();
     const iterations = 100000; // client-side PBKDF2 iterations (demo)
-    const passHash = await derivePBKDF2(password, salt, iterations);
+    const passHash = await CryptoUtils.derivePBKDF2(password, salt, iterations);
     const newUser = { name, email, passwordHash: passHash, salt, iterations };
     users.push(newUser);
     saveUsers(users);
 
     setCurrentUser({ name: newUser.name, email: newUser.email });
-    // opcional: enviar registro para servidor demo se configurado
-    try{
-        if (SERVER_URL){
-            fetch(`${SERVER_URL.replace(/\/$/,'')}/api/register`, {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ name: newUser.name, email: newUser.email, passwordHash: newUser.passwordHash, salt: newUser.salt, iterations: newUser.iterations })
-            }).catch(e=> console.warn('Server register failed', e));
-        }
-    }catch(e){}
     showToast(`✅ Conta criada com sucesso! Bem-vindo ao GameZone, ${name}!`, 'success');
     // fechar modal e limpar campos do formulário de registro para não manter dados visíveis
     showMainMenu();
@@ -323,6 +325,8 @@ function initPage(){
 // garantir que os botões estejam corretos também se o script for carregado depois do DOM
 document.addEventListener('DOMContentLoaded', () => {
     updateAuthButtons();
+    // tentar migrar carts antigos para productId (se o mapa de categorias estiver carregado)
+    try{ if (window.CartLogic && typeof window.CartLogic.migrateAllCarts === 'function') CartLogic.migrateAllCarts(); }catch(e){}
     // garantir que os formulários usem os handlers corretos (mais robusto que onsubmit inline)
     const regForm = document.querySelector('#registerPage form.auth-form');
     if (regForm) {
@@ -335,65 +339,12 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.removeAttribute('onsubmit');
         loginForm.addEventListener('submit', handleLogin);
     }
-    // carregar traduções e aplicar i18n
-    loadTranslations().then(()=>{
-        applyTranslations();
-        // garantir que auth buttons usem t()
-        updateAuthButtons();
-    }).catch(e=>{ console.warn('i18n load failed', e); });
-
-    // bind language selector
-    const sel = document.getElementById('langSelect');
-    if (sel) sel.addEventListener('change', (e)=>{ setLocale(e.target.value); });
-
     // bind feedback form
     const fb = document.getElementById('feedbackForm');
     if (fb) fb.addEventListener('submit', (ev)=>{ ev.preventDefault(); sendFeedback(); });
 });
 
-/* -------------------- i18n -------------------- */
-let LOCALES = {};
-let currentLocale = localStorage.getItem('gs_locale') || (navigator.language || 'pt-BR');
-currentLocale = currentLocale.startsWith('pt') ? 'pt-BR' : (currentLocale.startsWith('en') ? 'en' : 'pt-BR');
-
-async function loadTranslations(){
-    try{
-        const res = await fetch('i18n.json');
-        const data = await res.json();
-        LOCALES = data || {};
-        return LOCALES;
-    }catch(e){
-        // fallback minimal
-        LOCALES = {
-            'pt-BR': { 'cart':'Carrinho', 'brand':'GameStore', 'nav.store':'Loja', 'nav.new':'Novidades', 'nav.indie':'Indie', 'nav.deals':'Ofertas', 'hero.title':'Destaques', 'hero.desc':'Ofertas da semana e novidades selecionadas.', 'feedbackTitle':'Feedback' },
-            'en': { 'cart':'Cart','brand':'GameStore','nav.store':'Store','nav.new':'New','nav.indie':'Indie','nav.deals':'Deals','hero.title':'Highlights','hero.desc':'Weekly deals and selected new releases.','feedbackTitle':'Feedback' }
-        };
-        return LOCALES;
-    }
-}
-
-function t(key){
-    const loc = LOCALES[currentLocale] || {};
-    return (loc[key] !== undefined) ? loc[key] : key;
-}
-
-function applyTranslations(){
-    document.querySelectorAll('[data-i18n]').forEach(el=>{
-        const key = el.getAttribute('data-i18n');
-        const txt = t(key);
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = txt;
-        else el.textContent = txt;
-    });
-    // set feedback title
-    const ft = document.getElementById('feedbackTitle'); if (ft) ft.textContent = t('feedbackTitle');
-}
-
-function setLocale(locale){
-    currentLocale = locale || 'pt-BR';
-    localStorage.setItem('gs_locale', currentLocale);
-    applyTranslations();
-    updateAuthButtons();
-}
+/* internationalization removed for prototype */
 
 /* -------------------- Feedback -------------------- */
 function openFeedback(){
@@ -418,11 +369,7 @@ async function sendFeedback(){
     const el = document.getElementById('feedbackPage'); if (el) el.style.display = 'none';
     showMainMenu();
     // tentar enviar ao servidor demo se disponível (não-blocking)
-    try{
-        if (SERVER_URL){
-            fetch(`${SERVER_URL.replace(/\/$/,'')}/api/feedback`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(item) }).catch(()=>{});
-        }
-    }catch(e){}
+    // server integration removed for prototype; feedback kept locally in localStorage
 }
 
 /* -------------------- Analytics (simples/demo) -------------------- */
@@ -473,51 +420,7 @@ function showToast(message, type='info', timeout=3500){
     }, timeout);
 }
 
-/* -------------------- Hashing simples (SHA-256) -------------------- */
-async function hashPassword(password){
-    const enc = new TextEncoder();
-    const data = enc.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
-    return hashHex;
-}
-
-/* helpers para salt + hash */
-function generateSalt(len = 16){
-    const arr = new Uint8Array(len);
-    crypto.getRandomValues(arr);
-    return Array.from(arr).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-function hexToUint8Array(hex){
-    if (!hex) return new Uint8Array();
-    const len = hex.length/2;
-    const arr = new Uint8Array(len);
-    for(let i=0;i<len;i++) arr[i]=parseInt(hex.substr(i*2,2),16);
-    return arr;
-}
-
-async function hashWithSalt(saltHex, password){
-    const enc = new TextEncoder();
-    const saltBuf = hexToUint8Array(saltHex);
-    const passBuf = enc.encode(password);
-    const combined = new Uint8Array(saltBuf.length + passBuf.length);
-    combined.set(saltBuf,0);
-    combined.set(passBuf,saltBuf.length);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', combined);
-    return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-/* PBKDF2-based derivation for stronger client-side hashing (demo only) */
-async function derivePBKDF2(password, saltHex, iterations = 100000, keyLen = 32){
-    const enc = new TextEncoder();
-    const passKey = enc.encode(password);
-    const salt = hexToUint8Array(saltHex);
-    const key = await crypto.subtle.importKey('raw', passKey, {name: 'PBKDF2'}, false, ['deriveBits']);
-    const derived = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' }, key, keyLen * 8);
-    return Array.from(new Uint8Array(derived)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
+/* hashing functions moved to crypto.js (CryptoUtils) */
 
 /* -------------------- Perfil (modal) -------------------- */
 function openProfile(){
@@ -562,19 +465,19 @@ async function saveProfile(event){
         const salt = users[idx].salt || null;
         let matches = false;
         if (salt) {
-            const curH = await hashWithSalt(salt, currentPass);
+                const curH = await CryptoUtils.hashWithSalt(salt, currentPass);
             matches = (curH === storedHash);
         } else {
-            const curNoSalt = await hashPassword(currentPass);
+                const curNoSalt = await CryptoUtils.hashPassword(currentPass);
             matches = (storedHash === curNoSalt) || (storedHash === currentPass);
         }
         if (!matches) return showToast('Senha atual incorreta', 'error');
         if (newPass !== confirmNew) return showToast('A nova senha e a confirmação não coincidem', 'error');
-        const newSalt = generateSalt();
+        const newSalt = CryptoUtils.generateSalt();
         const iterations = 100000;
         users[idx].salt = newSalt;
         users[idx].iterations = iterations;
-        users[idx].passwordHash = await derivePBKDF2(newPass, newSalt, iterations);
+        users[idx].passwordHash = await CryptoUtils.derivePBKDF2(newPass, newSalt, iterations);
         delete users[idx].password;
     }
 
@@ -598,7 +501,8 @@ function cancelProfile(){
 /* -------------------- Carrinho (localStorage por usuário) -------------------- */
 function getCartKey(){
     const user = getCurrentUser();
-    if (!user) return null;
+    // suportar carrinho anônimo quando não há usuário logado
+    if (!user) return 'gs_cart_guest';
     return `gs_cart_${user.email}`;
 }
 
@@ -613,26 +517,25 @@ function saveCart(cart){
     if (!key) return;
     localStorage.setItem(key, JSON.stringify(cart));
     updateCartBadge();
-    // se houver servidor configurado, sincronizar carrinho por usuário (demo)
-    try{
-        const user = getCurrentUser();
-        if (SERVER_URL && user){
-            fetch(`${SERVER_URL.replace(/\/$/,'')}/api/cart`, {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ email: user.email, cart })
-            }).catch(e=> console.warn('Sync cart failed', e));
-        }
-    }catch(e){/* ignore */}
 }
 
-function addToCart(title, price){
+function addToCart(productId, title, price, imageUrl){
     const user = getCurrentUser();
-    if (!user){ showToast('Faça login para adicionar ao carrinho', 'error'); showLogin(); return; }
+    if (!user){
+        // permitir adicionar como convidado, mas sugerir login para persistência por conta
+        showToast('Você está no modo convidado — faça login para salvar o carrinho na sua conta.', 'info', 3000);
+    }
     const cart = getCart();
-    // simples: buscar item por title
-    const existing = cart.find(i => i.title === title);
-    if (existing){ existing.qty = (existing.qty || 1) + 1; }
-    else { cart.push({ id: Date.now(), title, price: Number(price), qty: 1 }); }
+    // buscar por productId quando possível, fallback para title (compatibilidade)
+    const existing = cart.find(i => (productId && i.productId === productId) || (!productId && i.title === title) );
+    if (existing){
+        existing.qty = (existing.qty || 1) + 1;
+        if (imageUrl) existing.image = imageUrl;
+        if (productId) existing.productId = productId;
+    }
+    else {
+        cart.push({ id: Date.now(), productId: productId || null, title, price: Number(price), qty: 1, image: imageUrl || null });
+    }
     saveCart(cart);
     showToastWithAction('Item adicionado ao carrinho', 'success', null);
     updateCartBadge();
@@ -696,14 +599,19 @@ function renderCart(){
         cart.forEach(item=>{
             const row = document.createElement('div');
             row.className = 'cart-item';
-            const left = document.createElement('div'); left.className = 'cart-item-left';
-            left.innerHTML = `<strong>${escapeHtml(item.title)}</strong>`;
-            const qtyDiv = document.createElement('div'); qtyDiv.className = 'cart-qty';
-            qtyDiv.innerHTML = `<div class="qty-controls"><button class="btn" onclick="updateItemQty(${item.id}, ${Math.max(0,(item.qty||1)-1)})">−</button> <span style="padding:0 0.4rem">${item.qty}</span> <button class="btn" onclick="updateItemQty(${item.id}, ${ (item.qty||1)+1 })">＋</button></div>`;
-            left.appendChild(qtyDiv);
+            // show thumbnail + title + qty static + remove button (no +/- controls)
+            const thumb = document.createElement('div'); thumb.className = 'cart-thumb';
+            const img = document.createElement('img');
+            img.src = item.image || (typeof item.title === 'string' ? `https://via.placeholder.com/120x68?text=${encodeURIComponent(item.title)}` : 'https://via.placeholder.com/120x68');
+            img.alt = item.title || 'Capa'; img.style.width='120px'; img.style.height='68px'; img.style.objectFit='cover'; img.style.borderRadius='6px';
+            thumb.appendChild(img);
+
+            const info = document.createElement('div'); info.className='cart-item-info';
+            info.innerHTML = `<strong>${escapeHtml(item.title)}</strong><div style="font-size:0.95rem;color:#cfcfcf">Qtd: ${item.qty||1}</div>`;
+
             const right = document.createElement('div'); right.className = 'cart-item-right';
             right.innerHTML = `R$ ${Number(item.price).toFixed(2)} <button class="btn" onclick="removeFromCart(${item.id})">Remover</button>`;
-            row.appendChild(left); row.appendChild(right); list.appendChild(row);
+            row.appendChild(thumb); row.appendChild(info); row.appendChild(right); list.appendChild(row);
             total += (item.price||0) * (item.qty||1);
         });
     }
@@ -762,7 +670,10 @@ function updateCartBadge(){
             mini.setAttribute('aria-hidden','false');
             c.forEach(item=>{
                 const row = document.createElement('div'); row.className='mini-item';
-                const left = document.createElement('div'); left.className='left'; left.innerHTML = `<div style="font-weight:600">${escapeHtml(item.title)}</div><div style="font-size:0.85rem;color:#cfcfcf">Qtd: ${item.qty}</div>`;
+                const left = document.createElement('div'); left.className='left';
+                const img = document.createElement('img'); img.src = item.image || `https://via.placeholder.com/80x45?text=${encodeURIComponent(item.title)}`; img.alt = item.title; img.style.width='80px'; img.style.height='45px'; img.style.objectFit='cover'; img.style.borderRadius='6px';
+                const txt = document.createElement('div'); txt.style.display='inline-block'; txt.style.marginLeft='0.5rem'; txt.innerHTML = `<div style="font-weight:600">${escapeHtml(item.title)}</div><div style="font-size:0.85rem;color:#cfcfcf">Qtd: ${item.qty}</div>`;
+                left.appendChild(img); left.appendChild(txt);
                 const right = document.createElement('div'); right.className='right'; right.innerHTML = `R$ ${Number(item.price).toFixed(2)}`;
                 row.appendChild(left); row.appendChild(right);
                 mini.appendChild(row);
@@ -785,29 +696,53 @@ function ensureDetailsModal(){
     m.className = 'page';
     m.style.display = 'none';
     m.innerHTML = `
-        <div class="form-container" style="max-width:720px;">
-            <div class="form-header" style="display:flex; align-items:center; justify-content:space-between;">
-                <h2 id="detailsTitle">Título</h2>
-                <button class="back-btn" onclick="(function(){document.getElementById('detailsModal').style.display='none'; showMainMenu();})()">Fechar</button>
+        <div class="form-container" style="max-width:820px;">
+            <div class="form-header" style="display:flex; align-items:center; justify-content:space-between; gap:0.8rem;">
+                <h2 id="detailsTitle" style="flex:1; min-width:0; margin:0; font-size:1.25rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Título</h2>
+                <div style="display:flex;gap:0.6rem;align-items:center; flex:0 0 auto;">
+                    <button class="back-btn" id="detailsCloseBtn" style="flex:0 0 auto;">Fechar</button>
+                </div>
             </div>
             <div style="display:flex; gap:1rem; align-items:flex-start;">
-                <div id="detailsImage" style="width:240px; height:140px; background:#222; border-radius:8px; display:flex;align-items:center;justify-content:center;color:#999">Imagem</div>
+                <div style="width:320px; min-width:240px;">
+                    <div id="detailsGallery" style="position:relative; width:100%; height:180px; background:#222; border-radius:8px; overflow:hidden; display:flex;align-items:center;justify-content:center;color:#999">
+                        <button id="detailsPrev" class="btn" style="position:absolute; left:8px; top:50%; transform:translateY(-50%);">◀</button>
+                        <div id="detailsImage" style="width:100%; height:100%; background-size:cover; background-position:center; display:flex;align-items:center;justify-content:center;color:#999">Imagem</div>
+                        <button id="detailsNext" class="btn" style="position:absolute; right:8px; top:50%; transform:translateY(-50%);">▶</button>
+                    </div>
+                    <div id="detailsTrailer" style="margin-top:0.6rem; display:none;"></div>
+                </div>
                 <div style="flex:1;">
                     <p id="detailsPrice" style="font-weight:700; margin:0.2rem 0">R$ 0,00</p>
                     <p id="detailsDesc" style="color:#cfcfcf;">Descrição do jogo.</p>
+                    <div id="detailsReviews" style="margin-top:0.8rem; color:#cfcfcf; font-size:0.95rem; display:none;"></div>
                     <div style="margin-top:1rem; display:flex; gap:0.6rem;">
                         <button id="detailsAddBtn" class="btn btn-primary">Adicionar ao Carrinho</button>
-                        <button class="btn" onclick="document.getElementById('detailsModal').style.display='none'; showMainMenu();">Fechar</button>
+                        <button class="btn" id="detailsCloseBtn2">Fechar</button>
                     </div>
                 </div>
             </div>
         </div>
     `;
     document.body.appendChild(m);
+    // behaviors: keyboard navigation and close handlers
+    const close = ()=>{ m.style.display='none'; showMainMenu(); };
+    m.querySelectorAll('#detailsCloseBtn, #detailsCloseBtn2').forEach(b=> b.addEventListener('click', close));
+    // prev/next handlers will be wired in showDetails (they need access to gallery state)
+    m.addEventListener('keydown', (ev)=>{
+        if (ev.key === 'Escape') close();
+        try{
+            const cur = Number(m.dataset.curIndex || 0);
+            const imgs = JSON.parse(m.dataset.images || 'null');
+            if (!imgs) return;
+            if (ev.key === 'ArrowLeft') { ev.preventDefault(); const prev = Math.max(0, cur-1); m.dataset.curIndex = prev; m.querySelector('#detailsImage').style.backgroundImage = `url(${imgs[prev]})`; }
+            if (ev.key === 'ArrowRight') { ev.preventDefault(); const next = Math.min(imgs.length-1, cur+1); m.dataset.curIndex = next; m.querySelector('#detailsImage').style.backgroundImage = `url(${imgs[next]})`; }
+        }catch(e){}
+    });
     return m;
 }
 
-function showDetails(title, price, imageUrl, description){
+function showDetails(productId, title, price, imageUrl, description){
     const m = ensureDetailsModal();
     document.querySelector('.menu').style.display = 'none';
     m.style.display = 'flex';
@@ -818,16 +753,71 @@ function showDetails(title, price, imageUrl, description){
     const priceEl = m.querySelector('#detailsPrice');
     const descEl = m.querySelector('#detailsDesc');
     const addBtn = m.querySelector('#detailsAddBtn');
+    const trailerEl = m.querySelector('#detailsTrailer');
+    const reviewsEl = m.querySelector('#detailsReviews');
+    const prevBtn = m.querySelector('#detailsPrev');
+    const nextBtn = m.querySelector('#detailsNext');
+
     titleEl.textContent = title;
     priceEl.textContent = price ? `R$ ${Number(price).toFixed(2)}` : 'Grátis';
     descEl.textContent = description || 'Sem descrição disponível.';
-    if (imageUrl){ imgEl.style.backgroundImage = `url(${imageUrl})`; imgEl.style.backgroundSize='cover'; imgEl.textContent=''; }
-    else { imgEl.style.backgroundImage = ''; imgEl.textContent = 'Imagem'; }
-    // remove previous listeners
+
+    // normalize images/trailer/reviews
+    let images = null; let trailer = null; let reviews = null;
+    if (imageUrl && typeof imageUrl === 'object'){
+        // object may be { images: [...], trailer: 'url', reviews: [...] } or an Array
+        if (Array.isArray(imageUrl)) images = imageUrl.slice();
+        else { images = imageUrl.images ? imageUrl.images.slice() : null; trailer = imageUrl.trailer || null; reviews = imageUrl.reviews || null; }
+    } else if (typeof imageUrl === 'string' && imageUrl) {
+        images = [imageUrl];
+    }
+
+    // render gallery
+    if (images && images.length){
+        m.dataset.images = JSON.stringify(images);
+        m.dataset.curIndex = 0;
+        imgEl.style.backgroundImage = `url(${images[0]})`;
+        imgEl.style.backgroundSize = 'cover'; imgEl.textContent = '';
+        prevBtn.style.display = images.length>1 ? 'block' : 'none';
+        nextBtn.style.display = images.length>1 ? 'block' : 'none';
+    } else {
+        delete m.dataset.images; delete m.dataset.curIndex;
+        if (typeof imageUrl === 'string' && imageUrl){ imgEl.style.backgroundImage = `url(${imageUrl})`; imgEl.style.backgroundSize='cover'; imgEl.textContent=''; }
+        else { imgEl.style.backgroundImage = ''; imgEl.textContent = 'Imagem'; }
+        prevBtn.style.display = 'none'; nextBtn.style.display = 'none';
+    }
+
+    // trailer
+    if (trailer){
+        trailerEl.style.display = 'block';
+        trailerEl.innerHTML = `<iframe width="100%" height="160" src="${trailer}" allowfullscreen frameborder="0"></iframe>`;
+    } else { trailerEl.style.display = 'none'; trailerEl.innerHTML = ''; }
+
+    // reviews
+    if (reviews && Array.isArray(reviews) && reviews.length){
+        reviewsEl.style.display = 'block';
+        reviewsEl.innerHTML = reviews.map(r=>`<div style="margin-bottom:0.4rem;"><strong>${escapeHtml(r.author||'Usuário')}</strong>: ${escapeHtml(r.text||'')}</div>`).join('');
+    } else { reviewsEl.style.display = 'none'; reviewsEl.innerHTML = ''; }
+
+    // prev/next wiring
+    const goTo = (idx)=>{
+        try{
+            const imgs = JSON.parse(m.dataset.images || 'null');
+            if (!imgs) return;
+            const clamped = Math.max(0, Math.min(imgs.length-1, idx));
+            m.dataset.curIndex = clamped;
+            m.querySelector('#detailsImage').style.backgroundImage = `url(${imgs[clamped]})`;
+        }catch(e){}
+    };
+    prevBtn.onclick = ()=>{ const cur = Number(m.dataset.curIndex||0); goTo(cur-1); };
+    nextBtn.onclick = ()=>{ const cur = Number(m.dataset.curIndex||0); goTo(cur+1); };
+
+    // remove previous listeners on add button
     const newAdd = addBtn.cloneNode(true);
     addBtn.parentNode.replaceChild(newAdd, addBtn);
     newAdd.addEventListener('click', ()=>{
-        addToCart(title, price || 0);
+        const imgForCart = (images && images.length) ? images[0] : (typeof imageUrl === 'string' ? imageUrl : null);
+        addToCart(productId || null, title, price || 0, imgForCart);
         m.style.display = 'none';
         showMainMenu();
     });

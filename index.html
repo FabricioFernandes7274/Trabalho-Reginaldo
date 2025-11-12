@@ -12,22 +12,25 @@
     </style>
 </head>
 <body onload="initPage()">
-    <header class="menu">
-        <div class="logo" style="justify-content:flex-start; gap:1rem;">
+    <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
+    <header class="menu" role="banner">
+            <div class="logo" style="justify-content:flex-start; gap:1rem;">
             <div class="logo-icon">🎮</div>
-            <h1 class="nome-logo">GameStore</h1>
+            <h1 class="nome-logo" data-i18n="brand">GameStore</h1>
         </div>
+
+        <button id="hamburgerBtn" class="btn" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar" onclick="document.body.classList.toggle('sidebar-open')">☰</button>
 
         <div class="store-topbar">
             <div class="search-bar">
-                <input type="search" placeholder="Pesquisar jogos, desenvolvedores...">
+                <input id="topSearch" type="search" placeholder="Pesquisar jogos, desenvolvedores..." aria-label="Pesquisar jogos">
             </div>
 
             <nav class="nav-links">
-                <a href="#">Loja</a>
-                <a href="#">Novidades</a>
-                <a href="#">Indie</a>
-                <a href="#">Ofertas</a>
+                <a href="#" data-i18n="nav.store">Loja</a>
+                <a href="#" data-i18n="nav.new">Novidades</a>
+                <a href="#" data-i18n="nav.indie">Indie</a>
+                <a href="#" data-i18n="nav.deals">Ofertas</a>
             </nav>
 
             <div style="display:flex;align-items:center;gap:0.6rem;">
@@ -35,13 +38,32 @@
                     <a href="#" class="btn btn-login" onclick="showLogin(event)">Entrar</a>
                     <a href="#" class="btn btn-register" onclick="showRegister(event)">Criar Conta</a>
                 </div>
-                <button class="btn" onclick="resetDemo()" title="Reset demo (limpa dados)">Reset demo</button>
+                <div class="mini-cart-wrapper" style="position:relative;">
+                    <button class="btn cart-btn" onclick="openCart()" aria-label="Abrir carrinho">
+                        <span class="cart-icon">
+                            <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                                <path d="M7 4h-2l-1 2h2l3.6 7.59-1.35 2.45C8.89 16.37 9.3 17 10 17h7v-2h-6.42c-.14 0-.25-.11-.25-.25l.03-.12L16.1 9H20V7h-4.21l-1.45-3H7z" fill="currentColor"/>
+                                <circle cx="10" cy="20" r="1" fill="currentColor"/>
+                                <circle cx="18" cy="20" r="1" fill="currentColor"/>
+                            </svg>
+                        </span>
+                        <span class="cart-text" data-i18n="cart">Carrinho</span>
+                        <span class="cart-badge">0</span>
+                    </button>
+                    <div id="miniCart" class="mini-cart" aria-hidden="true" style="display:none; position:absolute; right:0; top:40px; background:rgba(10,10,10,0.95); padding:0.6rem; border-radius:8px; width:280px; box-shadow:0 8px 30px rgba(0,0,0,0.6); z-index:2200;"></div>
+                </div>
+                <button class="btn" onclick="openFeedback()" title="Enviar feedback" aria-label="Enviar feedback">Feedback</button>
+                <button class="btn" onclick="resetDemo()" title="Reset demo (limpa dados)" aria-label="Reset demo">Reset demo</button>
+                <select id="langSelect" aria-label="Selecionar idioma" style="margin-left:0.6rem; background:transparent; border:1px solid rgba(255,255,255,0.06); color:inherit; padding:0.25rem 0.5rem; border-radius:6px;">
+                    <option value="pt-BR">PT-BR</option>
+                    <option value="en">EN</option>
+                </select>
             </div>
         </div>
     </header>
 
     <main class="store-wrap">
-        <aside class="sidebar">
+        <aside id="sidebar" class="sidebar" role="navigation" aria-label="Categorias">
             <h3>Categorias</h3>
             <ul>
                 <li><a href="categories.html?cat=luta">Luta</a></li>
@@ -60,7 +82,7 @@
             </ul>
         </aside>
 
-        <section class="main-content">
+    <section id="main-content" class="main-content" role="main">
             <section class="hero">
                 <div class="hero-info">
                     <h2>Destaques</h2>
@@ -70,42 +92,50 @@
 
             <section class="store-grid">
                 <article class="game-card">
-                    <div class="thumb">Imagem</div>
+                    <div class="thumb">
+                        <img src="https://via.placeholder.com/640x360?text=Cyber+Runner" loading="lazy" alt="Cyber Runner">
+                    </div>
                     <h4>Cyber Runner</h4>
                     <p class="price">R$ 39,90</p>
                     <div class="card-actions">
-                        <button class="btn btn-primary" onclick="addToCart('Cyber Runner',39.90)">Comprar</button>
-                        <button class="btn" onclick="alert('Detalhes do jogo')">Detalhes</button>
+                            <button class="btn btn-primary" onclick="addToCart('Cyber Runner',39.90)">Comprar</button>
+                            <button class="btn" onclick="showDetails('Cyber Runner',39.90,'https://via.placeholder.com/640x360?text=Cyber+Runner','Um jogo de corrida cyberpunk.')" aria-label="Detalhes do Cyber Runner">Detalhes</button>
                     </div>
                 </article>
 
                 <article class="game-card">
-                    <div class="thumb">Imagem</div>
+                    <div class="thumb">
+                        <img src="https://via.placeholder.com/640x360?text=Dungeon+Quest" loading="lazy" alt="Dungeon Quest">
+                    </div>
                     <h4>Dungeon Quest</h4>
                     <p class="price">R$ 59,90</p>
                     <div class="card-actions">
-                        <button class="btn btn-primary" onclick="addToCart('Dungeon Quest',59.90)">Comprar</button>
-                        <button class="btn" onclick="alert('Detalhes do jogo')">Detalhes</button>
+                            <button class="btn btn-primary" onclick="addToCart('Dungeon Quest',59.90)">Comprar</button>
+                            <button class="btn" onclick="showDetails('Dungeon Quest',59.90,'https://via.placeholder.com/640x360?text=Dungeon+Quest','Aventure-se por dungeons geradas.')" aria-label="Detalhes do Dungeon Quest">Detalhes</button>
                     </div>
                 </article>
 
                 <article class="game-card">
-                    <div class="thumb">Imagem</div>
+                    <div class="thumb">
+                        <img src="https://via.placeholder.com/640x360?text=Indie+Puzzle" loading="lazy" alt="Indie Puzzle">
+                    </div>
                     <h4>Indie Puzzle</h4>
                     <p class="price">Grátis</p>
                     <div class="card-actions">
-                        <button class="btn btn-primary" onclick="addToCart('Indie Puzzle',0)">Instalar</button>
-                        <button class="btn" onclick="alert('Detalhes do jogo')">Detalhes</button>
+                            <button class="btn btn-primary" onclick="addToCart('Indie Puzzle',0)">Instalar</button>
+                            <button class="btn" onclick="showDetails('Indie Puzzle',0,'https://via.placeholder.com/640x360?text=Indie+Puzzle','Puzzle relaxante e criativo.')" aria-label="Detalhes do Indie Puzzle">Detalhes</button>
                     </div>
                 </article>
 
                 <article class="game-card">
-                    <div class="thumb">Imagem</div>
+                    <div class="thumb">
+                        <img src="https://via.placeholder.com/640x360?text=Racer+X" loading="lazy" alt="Racer X">
+                    </div>
                     <h4>Racer X</h4>
                     <p class="price">R$ 19,90</p>
                     <div class="card-actions">
-                        <button class="btn btn-primary" onclick="addToCart('Racer X',19.90)">Comprar</button>
-                        <button class="btn" onclick="alert('Detalhes do jogo')">Detalhes</button>
+                            <button class="btn btn-primary" onclick="addToCart('Racer X',19.90)">Comprar</button>
+                            <button class="btn" onclick="showDetails('Racer X',19.90,'https://via.placeholder.com/640x360?text=Racer+X','Corridas intensas em pistas futuristas.')" aria-label="Detalhes do Racer X">Detalhes</button>
                     </div>
                 </article>
             </section>
@@ -117,7 +147,7 @@
         <div class="form-container">
             <div class="form-header">
                 <button class="back-btn" onclick="showMainMenu()">Voltar</button>
-                <h2>Fazer Login</h2>
+                <h2 id="loginTitle">Fazer Login</h2>
             </div>
             <form class="auth-form">
                 <div class="input-group"><label for="loginEmail">Email ou Usuário</label><input id="loginEmail" type="text" required></div>
@@ -132,7 +162,7 @@
         <div class="form-container">
             <div class="form-header">
                 <button class="back-btn" onclick="showMainMenu()">← Voltar</button>
-                <h2>Criar Conta</h2>
+                <h2 id="registerTitle">Criar Conta</h2>
             </div>
             <form class="auth-form">
                 <div class="input-group"><label for="registerName">Nome Completo</label><input id="registerName" type="text" required></div>
@@ -147,7 +177,7 @@
 
     <div id="profilePage" class="page" style="display:none;">
         <div class="form-container">
-            <div class="form-header"><button class="back-btn" onclick="cancelProfile()">← Voltar</button><h2>Meu Perfil</h2></div>
+            <div class="form-header"><button class="back-btn" onclick="cancelProfile()">← Voltar</button><h2 id="profileTitle">Meu Perfil</h2></div>
             <form class="auth-form" onsubmit="saveProfile(event)">
                 <div class="input-group"><label for="profileName">Nome</label><input id="profileName" type="text" required></div>
                 <div class="input-group"><label for="profileEmail">Email</label><input id="profileEmail" type="email" required></div>
@@ -166,6 +196,18 @@
             <div id="cartList" style="max-height:320px;overflow:auto;margin-top:0.6rem"></div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;"><strong>Total</strong><div id="cartTotal">R$ 0.00</div></div>
             <div style="display:flex;gap:0.6rem;justify-content:flex-end;margin-top:1rem;"><button class="btn" onclick="clearCart()">Limpar</button><button class="btn btn-primary" onclick="checkout()">Finalizar Compra</button></div>
+        </div>
+    </div>
+
+    <div id="feedbackPage" class="page" style="display:none;">
+        <div class="form-container">
+            <div class="form-header"><button class="back-btn" onclick="(function(){document.getElementById('feedbackPage').style.display='none'; showMainMenu();})()">← Voltar</button><h2 id="feedbackTitle">Feedback</h2></div>
+            <form id="feedbackForm">
+                <div class="input-group"><label for="fbName">Nome (opcional)</label><input id="fbName" type="text"></div>
+                <div class="input-group"><label for="fbEmail">Email (opcional)</label><input id="fbEmail" type="email"></div>
+                <div class="input-group"><label for="fbMessage">Mensagem</label><textarea id="fbMessage" rows="5" required></textarea></div>
+                <div style="display:flex; gap:0.6rem; justify-content:flex-end;"><button class="btn" type="button" onclick="document.getElementById('feedbackPage').style.display='none'; showMainMenu();">Cancelar</button><button class="btn btn-primary" type="submit">Enviar</button></div>
+            </form>
         </div>
     </div>
 

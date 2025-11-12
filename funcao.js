@@ -38,8 +38,8 @@ function updateAuthButtons() {
     nodes.forEach(container => {
         if (user) {
             container.innerHTML = `
-                <span class="user-greet" style="margin-right:0.6rem; font-weight:600;">Olá, ${escapeHtml(user.name)}</span>
-                <button class="btn" onclick="openProfile()">Perfil</button>
+                <span class="user-greet" style="margin-right:0.6rem; font-weight:600;">${t('auth.greeting') || 'Olá'}, ${escapeHtml(user.name)}</span>
+                <button class="btn" onclick="openProfile()">${t('auth.profile') || 'Perfil'}</button>
                 <button class="btn cart-btn" onclick="openCart()">
                     <span class="cart-icon">
                         <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -48,15 +48,15 @@ function updateAuthButtons() {
                             <circle cx="18" cy="20" r="1" fill="currentColor"/>
                         </svg>
                     </span>
-                    <span class="cart-text">Carrinho</span>
+                    <span class="cart-text">${t('cart') || 'Carrinho'}</span>
                     <span class="cart-badge">0</span>
                 </button>
-                <button class="btn" onclick="logout()">Sair</button>
+                <button class="btn" onclick="logout()">${t('auth.logout') || 'Sair'}</button>
             `;
         } else {
             container.innerHTML = `
-                <a href="#" class="btn btn-login" onclick="showLogin(event)">Entrar</a>
-                <a href="#" class="btn btn-register" onclick="showRegister(event)">Criar Conta</a>
+                <a href="#" class="btn btn-login" onclick="showLogin(event)">${t('auth.login') || 'Entrar'}</a>
+                <a href="#" class="btn btn-register" onclick="showRegister(event)">${t('auth.register') || 'Criar Conta'}</a>
             `;
         }
     });
@@ -68,17 +68,38 @@ function escapeHtml(str){
     return String(str).replace(/[&<>\"'`]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;","`":"&#96;"}[s]));
 }
 
+/* Optional server integration: set to '' to keep localStorage-only. Example: 'http://localhost:5000' */
+const SERVER_URL = '';
+const ANALYTICS_URL = '';
+
+/* Accessibility: remember last focused element when opening modals */
+let _lastFocusedElement = null;
+function focusFirstIn(container){
+    try{
+        _lastFocusedElement = document.activeElement;
+        const sel = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        const first = container.querySelector(sel);
+        if (first) first.focus();
+    }catch(e){/* ignore */}
+}
+
 // UI actions
 function showLogin(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
     document.querySelector('.menu').style.display = 'none';
-    document.getElementById('loginPage').style.display = 'flex';
+    const el = document.getElementById('loginPage');
+    el.style.display = 'flex';
+    el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','loginTitle');
+    focusFirstIn(el);
 }
 
 function showRegister(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
     document.querySelector('.menu').style.display = 'none';
-    document.getElementById('registerPage').style.display = 'flex';
+    const el = document.getElementById('registerPage');
+    el.style.display = 'flex';
+    el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','registerTitle');
+    focusFirstIn(el);
 }
 
 function showMainMenu() {
@@ -86,6 +107,7 @@ function showMainMenu() {
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('registerPage').style.display = 'none';
     updateAuthButtons();
+    try{ if (_lastFocusedElement) _lastFocusedElement.focus(); }catch(e){}
 }
 
 function showProfile(){
@@ -193,8 +215,19 @@ async function handleLogin(event) {
     const salt = user.salt || null;
 
     if (salt) {
-        const h = await hashWithSalt(salt, password);
-        if (h === storedHash) {
+        // suportar PBKDF2 quando disponível (users may have iterations)
+        if (users[idx].iterations) {
+            const h = await derivePBKDF2(password, salt, users[idx].iterations);
+            if (h === storedHash) {
+                setCurrentUser({ name: user.name, email: user.email });
+                showToast(`✅ Login realizado com sucesso! Bem-vindo de volta, ${user.name}!`, 'success');
+                showMainMenu();
+                const loginForm = document.querySelector('#loginPage form.auth-form'); if (loginForm) loginForm.reset();
+                return;
+            }
+        } else {
+            const h = await hashWithSalt(salt, password);
+            if (h === storedHash) {
             setCurrentUser({ name: user.name, email: user.email });
             showToast(`✅ Login realizado com sucesso! Bem-vindo de volta, ${user.name}!`, 'success');
             showMainMenu();
@@ -202,16 +235,20 @@ async function handleLogin(event) {
             const loginForm = document.querySelector('#loginPage form.auth-form');
             if (loginForm) loginForm.reset();
             return;
+            }
         }
     } else {
         // sem salt: pode ser hash sem salt ou texto puro
         const hashNoSalt = await hashPassword(password);
         if (storedHash === hashNoSalt || storedHash === password) {
             // fazer upgrade para salt
+            // fazer upgrade para PBKDF2
             const newSalt = generateSalt();
-            const newHash = await hashWithSalt(newSalt, password);
+            const iterations = 100000; // PBKDF2 iterations for client-side demo
+            const newHash = await derivePBKDF2(password, newSalt, iterations);
             users[idx].salt = newSalt;
             users[idx].passwordHash = newHash;
+            users[idx].iterations = iterations;
             delete users[idx].password;
             saveUsers(users);
             setCurrentUser({ name: user.name, email: user.email });
@@ -248,12 +285,22 @@ async function handleRegister(event) {
     if (exists) { showToast('Já existe uma conta com esse email. Faça login ou use outro email.', 'error'); return; }
 
     const salt = generateSalt();
-    const passHash = await hashWithSalt(salt, password);
-    const newUser = { name, email, passwordHash: passHash, salt };
+    const iterations = 100000; // client-side PBKDF2 iterations (demo)
+    const passHash = await derivePBKDF2(password, salt, iterations);
+    const newUser = { name, email, passwordHash: passHash, salt, iterations };
     users.push(newUser);
     saveUsers(users);
 
     setCurrentUser({ name: newUser.name, email: newUser.email });
+    // opcional: enviar registro para servidor demo se configurado
+    try{
+        if (SERVER_URL){
+            fetch(`${SERVER_URL.replace(/\/$/,'')}/api/register`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ name: newUser.name, email: newUser.email, passwordHash: newUser.passwordHash, salt: newUser.salt, iterations: newUser.iterations })
+            }).catch(e=> console.warn('Server register failed', e));
+        }
+    }catch(e){}
     showToast(`✅ Conta criada com sucesso! Bem-vindo ao GameZone, ${name}!`, 'success');
     // fechar modal e limpar campos do formulário de registro para não manter dados visíveis
     showMainMenu();
@@ -288,7 +335,118 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.removeAttribute('onsubmit');
         loginForm.addEventListener('submit', handleLogin);
     }
+    // carregar traduções e aplicar i18n
+    loadTranslations().then(()=>{
+        applyTranslations();
+        // garantir que auth buttons usem t()
+        updateAuthButtons();
+    }).catch(e=>{ console.warn('i18n load failed', e); });
+
+    // bind language selector
+    const sel = document.getElementById('langSelect');
+    if (sel) sel.addEventListener('change', (e)=>{ setLocale(e.target.value); });
+
+    // bind feedback form
+    const fb = document.getElementById('feedbackForm');
+    if (fb) fb.addEventListener('submit', (ev)=>{ ev.preventDefault(); sendFeedback(); });
 });
+
+/* -------------------- i18n -------------------- */
+let LOCALES = {};
+let currentLocale = localStorage.getItem('gs_locale') || (navigator.language || 'pt-BR');
+currentLocale = currentLocale.startsWith('pt') ? 'pt-BR' : (currentLocale.startsWith('en') ? 'en' : 'pt-BR');
+
+async function loadTranslations(){
+    try{
+        const res = await fetch('i18n.json');
+        const data = await res.json();
+        LOCALES = data || {};
+        return LOCALES;
+    }catch(e){
+        // fallback minimal
+        LOCALES = {
+            'pt-BR': { 'cart':'Carrinho', 'brand':'GameStore', 'nav.store':'Loja', 'nav.new':'Novidades', 'nav.indie':'Indie', 'nav.deals':'Ofertas', 'hero.title':'Destaques', 'hero.desc':'Ofertas da semana e novidades selecionadas.', 'feedbackTitle':'Feedback' },
+            'en': { 'cart':'Cart','brand':'GameStore','nav.store':'Store','nav.new':'New','nav.indie':'Indie','nav.deals':'Deals','hero.title':'Highlights','hero.desc':'Weekly deals and selected new releases.','feedbackTitle':'Feedback' }
+        };
+        return LOCALES;
+    }
+}
+
+function t(key){
+    const loc = LOCALES[currentLocale] || {};
+    return (loc[key] !== undefined) ? loc[key] : key;
+}
+
+function applyTranslations(){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+        const key = el.getAttribute('data-i18n');
+        const txt = t(key);
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = txt;
+        else el.textContent = txt;
+    });
+    // set feedback title
+    const ft = document.getElementById('feedbackTitle'); if (ft) ft.textContent = t('feedbackTitle');
+}
+
+function setLocale(locale){
+    currentLocale = locale || 'pt-BR';
+    localStorage.setItem('gs_locale', currentLocale);
+    applyTranslations();
+    updateAuthButtons();
+}
+
+/* -------------------- Feedback -------------------- */
+function openFeedback(){
+    const el = document.getElementById('feedbackPage');
+    if (!el) return showToast('Feedback não disponível', 'error');
+    document.querySelector('.menu').style.display = 'none';
+    el.style.display = 'flex';
+    el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
+    focusFirstIn(el);
+}
+
+async function sendFeedback(){
+    const name = document.getElementById('fbName').value.trim();
+    const email = document.getElementById('fbEmail').value.trim();
+    const message = document.getElementById('fbMessage').value.trim();
+    if (!message) return showToast('Escreva uma mensagem', 'error');
+    const list = JSON.parse(localStorage.getItem('gs_feedbacks') || '[]');
+    const item = { id: Date.now(), name, email, message, ts: Date.now() };
+    list.push(item);
+    localStorage.setItem('gs_feedbacks', JSON.stringify(list));
+    showToast('Obrigado pelo feedback!', 'success');
+    const el = document.getElementById('feedbackPage'); if (el) el.style.display = 'none';
+    showMainMenu();
+    // tentar enviar ao servidor demo se disponível (não-blocking)
+    try{
+        if (SERVER_URL){
+            fetch(`${SERVER_URL.replace(/\/$/,'')}/api/feedback`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(item) }).catch(()=>{});
+        }
+    }catch(e){}
+}
+
+/* -------------------- Analytics (simples/demo) -------------------- */
+function loadAnalytics(){
+    if (ANALYTICS_URL){
+        const s = document.createElement('script'); s.src = ANALYTICS_URL; s.async = true; document.head.appendChild(s);
+    }
+}
+
+function trackEvent(name, payload){
+    try{
+        if (ANALYTICS_URL){
+            // send to configured analytics endpoint (assumes CORS ok)
+            fetch(ANALYTICS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({event:name, payload, ts:Date.now()})}).catch(()=>{});
+            return;
+        }
+        const arr = JSON.parse(localStorage.getItem('gs_analytics') || '[]');
+        arr.push({ event:name, payload, ts: Date.now() });
+        localStorage.setItem('gs_analytics', JSON.stringify(arr));
+    }catch(e){}
+}
+
+// iniciar analytics simples (non-blocking)
+try{ loadAnalytics(); }catch(e){}
 
 /* -------------------- Toasts estilizados -------------------- */
 function ensureToastContainer(){
@@ -351,6 +509,16 @@ async function hashWithSalt(saltHex, password){
     return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
+/* PBKDF2-based derivation for stronger client-side hashing (demo only) */
+async function derivePBKDF2(password, saltHex, iterations = 100000, keyLen = 32){
+    const enc = new TextEncoder();
+    const passKey = enc.encode(password);
+    const salt = hexToUint8Array(saltHex);
+    const key = await crypto.subtle.importKey('raw', passKey, {name: 'PBKDF2'}, false, ['deriveBits']);
+    const derived = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' }, key, keyLen * 8);
+    return Array.from(new Uint8Array(derived)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
 /* -------------------- Perfil (modal) -------------------- */
 function openProfile(){
     const el = document.getElementById('profilePage');
@@ -403,8 +571,10 @@ async function saveProfile(event){
         if (!matches) return showToast('Senha atual incorreta', 'error');
         if (newPass !== confirmNew) return showToast('A nova senha e a confirmação não coincidem', 'error');
         const newSalt = generateSalt();
+        const iterations = 100000;
         users[idx].salt = newSalt;
-        users[idx].passwordHash = await hashWithSalt(newSalt, newPass);
+        users[idx].iterations = iterations;
+        users[idx].passwordHash = await derivePBKDF2(newPass, newSalt, iterations);
         delete users[idx].password;
     }
 
@@ -443,6 +613,16 @@ function saveCart(cart){
     if (!key) return;
     localStorage.setItem(key, JSON.stringify(cart));
     updateCartBadge();
+    // se houver servidor configurado, sincronizar carrinho por usuário (demo)
+    try{
+        const user = getCurrentUser();
+        if (SERVER_URL && user){
+            fetch(`${SERVER_URL.replace(/\/$/,'')}/api/cart`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ email: user.email, cart })
+            }).catch(e=> console.warn('Sync cart failed', e));
+        }
+    }catch(e){/* ignore */}
 }
 
 function addToCart(title, price){
@@ -454,7 +634,7 @@ function addToCart(title, price){
     if (existing){ existing.qty = (existing.qty || 1) + 1; }
     else { cart.push({ id: Date.now(), title, price: Number(price), qty: 1 }); }
     saveCart(cart);
-    showToast('Item adicionado ao carrinho', 'success');
+    showToastWithAction('Item adicionado ao carrinho', 'success', null);
     updateCartBadge();
 }
 
@@ -462,7 +642,23 @@ function removeFromCart(itemId){
     const cart = getCart();
     const idx = cart.findIndex(i=>i.id==itemId);
     if (idx===-1) return;
-    cart.splice(idx,1);
+    const removed = cart.splice(idx,1)[0];
+    saveCart(cart);
+    renderCart();
+    updateCartBadge();
+    // permitir desfazer remoção por 6s
+    showToastWithAction('Item removido', 'info', 'Desfazer', ()=>{
+        const c = getCart(); c.push(removed); saveCart(c); renderCart(); updateCartBadge(); showToast('Remoção desfeita', 'success');
+    }, 6000);
+}
+
+function updateItemQty(itemId, qty){
+    const cart = getCart();
+    const idx = cart.findIndex(i=>i.id==itemId);
+    if (idx===-1) return;
+    cart[idx].qty = qty <= 0 ? 0 : qty;
+    // remover se qty 0
+    if (cart[idx].qty <= 0) cart.splice(idx,1);
     saveCart(cart);
     renderCart();
     updateCartBadge();
@@ -481,6 +677,8 @@ function openCart(){
     if (!el) return showToast('Carrinho não disponível', 'error');
     document.querySelector('.menu').style.display = 'none';
     el.style.display = 'flex';
+    el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
+    focusFirstIn(el);
     renderCart();
 }
 
@@ -498,13 +696,35 @@ function renderCart(){
         cart.forEach(item=>{
             const row = document.createElement('div');
             row.className = 'cart-item';
-            row.innerHTML = `<div class="cart-item-left"><strong>${escapeHtml(item.title)}</strong><div class="cart-qty">Qtd: ${item.qty}</div></div><div class="cart-item-right">R$ ${Number(item.price).toFixed(2)} <button class="btn" onclick="removeFromCart(${item.id})">Remover</button></div>`;
-            list.appendChild(row);
+            const left = document.createElement('div'); left.className = 'cart-item-left';
+            left.innerHTML = `<strong>${escapeHtml(item.title)}</strong>`;
+            const qtyDiv = document.createElement('div'); qtyDiv.className = 'cart-qty';
+            qtyDiv.innerHTML = `<div class="qty-controls"><button class="btn" onclick="updateItemQty(${item.id}, ${Math.max(0,(item.qty||1)-1)})">−</button> <span style="padding:0 0.4rem">${item.qty}</span> <button class="btn" onclick="updateItemQty(${item.id}, ${ (item.qty||1)+1 })">＋</button></div>`;
+            left.appendChild(qtyDiv);
+            const right = document.createElement('div'); right.className = 'cart-item-right';
+            right.innerHTML = `R$ ${Number(item.price).toFixed(2)} <button class="btn" onclick="removeFromCart(${item.id})">Remover</button>`;
+            row.appendChild(left); row.appendChild(right); list.appendChild(row);
             total += (item.price||0) * (item.qty||1);
         });
     }
     totalEl.textContent = `R$ ${total.toFixed(2)}`;
     updateCartBadge();
+}
+
+/* Toast com ação opcional (texto do botão e callback) */
+function showToastWithAction(message, type='info', actionText=null, actionCb=null, timeout=3500){
+    const container = ensureToastContainer();
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    const txt = document.createElement('span'); txt.textContent = message; t.appendChild(txt);
+    if (actionText && actionCb){
+        const btn = document.createElement('button'); btn.className='btn'; btn.style.marginLeft='0.6rem'; btn.textContent = actionText;
+        btn.addEventListener('click', ()=>{ actionCb(); t.remove(); });
+        t.appendChild(btn);
+    }
+    container.appendChild(t);
+    requestAnimationFrame(()=> t.classList.add('visible'));
+    setTimeout(()=>{ try{ t.classList.remove('visible'); setTimeout(()=> t.remove(),300);}catch(e){} }, timeout);
 }
 
 function checkout(){
@@ -532,4 +752,84 @@ function updateCartBadge(){
             setTimeout(()=> b.classList.remove('badge-pulse'), 600);
         }
     });
+    // atualizar mini-cart
+    const mini = document.getElementById('miniCart');
+    if (mini){
+        const c = getCart();
+        mini.innerHTML = '';
+        if (!c || c.length===0) { mini.innerHTML = '<div style="padding:0.6rem">Carrinho vazio</div>'; mini.setAttribute('aria-hidden','true'); }
+        else {
+            mini.setAttribute('aria-hidden','false');
+            c.forEach(item=>{
+                const row = document.createElement('div'); row.className='mini-item';
+                const left = document.createElement('div'); left.className='left'; left.innerHTML = `<div style="font-weight:600">${escapeHtml(item.title)}</div><div style="font-size:0.85rem;color:#cfcfcf">Qtd: ${item.qty}</div>`;
+                const right = document.createElement('div'); right.className='right'; right.innerHTML = `R$ ${Number(item.price).toFixed(2)}`;
+                row.appendChild(left); row.appendChild(right);
+                mini.appendChild(row);
+            });
+            const actions = document.createElement('div'); actions.className='mini-actions';
+            actions.innerHTML = `<div style="font-weight:700">Total</div><div style="font-weight:700">R$ ${c.reduce((s,i)=>s + (i.price||0)*(i.qty||1),0).toFixed(2)}</div>`;
+            mini.appendChild(actions);
+            const btns = document.createElement('div'); btns.className='mini-actions'; btns.innerHTML = `<button class="btn" onclick="openCart()">Ver carrinho</button><button class="btn btn-primary" onclick="checkout()">Finalizar</button>`;
+            mini.appendChild(btns);
+        }
+    }
 }
+
+/* -------------------- Modal de detalhes do jogo -------------------- */
+function ensureDetailsModal(){
+    let m = document.getElementById('detailsModal');
+    if (m) return m;
+    m = document.createElement('div');
+    m.id = 'detailsModal';
+    m.className = 'page';
+    m.style.display = 'none';
+    m.innerHTML = `
+        <div class="form-container" style="max-width:720px;">
+            <div class="form-header" style="display:flex; align-items:center; justify-content:space-between;">
+                <h2 id="detailsTitle">Título</h2>
+                <button class="back-btn" onclick="(function(){document.getElementById('detailsModal').style.display='none'; showMainMenu();})()">Fechar</button>
+            </div>
+            <div style="display:flex; gap:1rem; align-items:flex-start;">
+                <div id="detailsImage" style="width:240px; height:140px; background:#222; border-radius:8px; display:flex;align-items:center;justify-content:center;color:#999">Imagem</div>
+                <div style="flex:1;">
+                    <p id="detailsPrice" style="font-weight:700; margin:0.2rem 0">R$ 0,00</p>
+                    <p id="detailsDesc" style="color:#cfcfcf;">Descrição do jogo.</p>
+                    <div style="margin-top:1rem; display:flex; gap:0.6rem;">
+                        <button id="detailsAddBtn" class="btn btn-primary">Adicionar ao Carrinho</button>
+                        <button class="btn" onclick="document.getElementById('detailsModal').style.display='none'; showMainMenu();">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(m);
+    return m;
+}
+
+function showDetails(title, price, imageUrl, description){
+    const m = ensureDetailsModal();
+    document.querySelector('.menu').style.display = 'none';
+    m.style.display = 'flex';
+    m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
+    focusFirstIn(m);
+    const titleEl = m.querySelector('#detailsTitle');
+    const imgEl = m.querySelector('#detailsImage');
+    const priceEl = m.querySelector('#detailsPrice');
+    const descEl = m.querySelector('#detailsDesc');
+    const addBtn = m.querySelector('#detailsAddBtn');
+    titleEl.textContent = title;
+    priceEl.textContent = price ? `R$ ${Number(price).toFixed(2)}` : 'Grátis';
+    descEl.textContent = description || 'Sem descrição disponível.';
+    if (imageUrl){ imgEl.style.backgroundImage = `url(${imageUrl})`; imgEl.style.backgroundSize='cover'; imgEl.textContent=''; }
+    else { imgEl.style.backgroundImage = ''; imgEl.textContent = 'Imagem'; }
+    // remove previous listeners
+    const newAdd = addBtn.cloneNode(true);
+    addBtn.parentNode.replaceChild(newAdd, addBtn);
+    newAdd.addEventListener('click', ()=>{
+        addToCart(title, price || 0);
+        m.style.display = 'none';
+        showMainMenu();
+    });
+}
+

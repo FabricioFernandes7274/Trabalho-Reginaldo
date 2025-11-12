@@ -11,6 +11,19 @@
         flex-direction: column;
     }
 
+/* Skip link for keyboard users */
+.skip-link{
+    position: absolute;
+    left: -999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+.skip-link:focus{
+    left: 1rem; top: 1rem; width: auto; height: auto; background: #111; color: #fff; padding: 0.4rem 0.6rem; border-radius:6px; z-index:9999; text-decoration:none;
+}
+
 /* Container do menu */
 .menu{
     background: rgba(40, 40, 40, 0.7);
@@ -24,6 +37,22 @@
     width: 100%;
     box-shadow: 0 6px 20px rgba(0,0,0,0.5);
 }
+
+/* Hamburger and sidebar toggle for smaller screens */
+#hamburgerBtn{
+    display:none;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+}
+
+/* When sidebar is collapsed via body class */
+body.sidebar-open .sidebar{ display:none; }
+body.sidebar-open .menu .nav-links{ display:none; }
+
+/* Focus visible for accessibility */
+.btn:focus, .back-btn:focus, input:focus{ outline: 3px solid rgba(254,202,87,0.25); outline-offset: 2px; }
 
 /* Logo */
 .logo {

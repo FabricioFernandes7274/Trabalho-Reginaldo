@@ -93,6 +93,18 @@
     transition: transform 160ms ease;
 }
 
+/* Mini-cart styles */
+.mini-cart{ max-height: 320px; overflow:auto; }
+.mini-cart .mini-item{ display:flex; justify-content:space-between; gap:0.4rem; padding:0.45rem 0.25rem; border-bottom:1px solid rgba(255,255,255,0.03); }
+.mini-cart .mini-item .left{ display:flex; gap:0.5rem; align-items:center; }
+.mini-cart .mini-item .right{ text-align:right; }
+.mini-cart .mini-actions{ display:flex; gap:0.4rem; margin-top:0.5rem; justify-content:space-between; }
+.mini-cart .qty-controls{ display:flex; gap:0.2rem; align-items:center; }
+.mini-cart .qty-controls button{ padding:0.15rem 0.35rem; font-size:0.85rem; }
+
+/* show mini-cart on hover */
+.mini-cart-wrapper:hover #miniCart{ display:block; }
+
 /* animação de pulso quando adicionar itens */
 .badge-pulse{ animation: badgePulse 420ms ease; }
 @keyframes badgePulse{
@@ -152,10 +164,35 @@
     background: linear-gradient(to bottom, rgba(0,0,0,0.04), rgba(0,0,0,0.32));
 }
 
+/* When the thumb contains an <img>, make it fill the container */
+.game-card .thumb img{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 /* Ajuste responsivo: reduz levemente padding/fonte dos botões em telas estreitas */
 @media (max-width: 520px) {
     .store-grid .btn {
         font-size: 0.9rem;
         padding: 0.35rem 0.5rem;
     }
+}
+
+/* Mostrar hamburger e esconder sidebar em telas pequenas */
+@media (max-width: 900px){
+    #hamburgerBtn{ display:inline-block; }
+    .sidebar{ display:none; }
+    body.sidebar-open .sidebar{ display:block; position:absolute; left:0; top:64px; background: rgba(0,0,0,0.95); width:260px; height: calc(100vh - 64px); z-index:2000; padding:1rem; box-shadow: 2px 0 20px rgba(0,0,0,0.6); }
+    body.sidebar-open .menu{ position:relative; z-index:2100; }
+}
+
+/* Ensure main content scrolls properly on small screens */
+@media (max-width: 520px){
+    .store-grid{ grid-template-columns: repeat(1,1fr); }
+    .search-bar input[type="search"]{ width:100%; }
 }

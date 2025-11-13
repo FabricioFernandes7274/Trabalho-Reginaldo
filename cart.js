@@ -26,6 +26,16 @@
 
     Cart.addToCart = function(productId, title, price, imageUrl){
         try{ console.debug('Cart.addToCart called', { productId, title, price, imageUrl }); }catch(e){}
+        // verificar se o usuário já possui o jogo (usar função global se disponível)
+        try{
+            if (window.isGameOwned && typeof window.isGameOwned === 'function'){
+                if (window.isGameOwned(productId, title)){
+                    try{ if (window.showToast) showToast('Você já possui este jogo em sua biblioteca.', 'warning'); }catch(e){}
+                    return;
+                }
+            }
+        }catch(e){ console.warn('Cart.addToCart: verificação de posse falhou', e); }
+        
         const cart = Cart.getCart();
         const existing = cart.find(i => (productId && i.productId === productId) || (!productId && i.title === title) );
         if (existing){ existing.qty = (existing.qty||1) + 1; if (imageUrl) existing.image = imageUrl; if (productId) existing.productId = productId; }

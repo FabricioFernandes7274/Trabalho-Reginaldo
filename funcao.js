@@ -63,6 +63,7 @@ function updateAuthButtons() {
             container.innerHTML = `
                 <span class="user-greet" style="margin-right:0.6rem; font-weight:600;">Olá, ${escapeHtml(user.name)}</span>
                     <button class="btn" onclick="openProfile()">Perfil</button>
+                    <button class="btn" onclick="openLibrary()">Biblioteca</button>
                     <button class="btn" onclick="showAddGameModal()">Adicionar Jogo</button>
                     <button class="btn" onclick="logout()">Sair</button>
             `;
@@ -544,6 +545,121 @@ function cancelProfile(){
     showMainMenu();
 }
 
+/* -------------------- Biblioteca (jogos comprados) -------------------- */
+function getLibraryKey(){
+    const user = getCurrentUser();
+    if (!user) return null;
+    return `gs_library_${user.email}`;
+}
+
+function getLibrary(){
+    const key = getLibraryKey();
+    if (!key) return [];
+    try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ return []; }
+}
+
+function saveLibrary(library){
+    const key = getLibraryKey();
+    if (!key) return;
+    localStorage.setItem(key, JSON.stringify(library));
+}
+
+function isGameOwned(productId, title){
+    const library = getLibrary();
+    const owned = library.some(g => (productId && g.productId === productId) || (!productId && g.title === title));
+    console.log('isGameOwned:', { productId, title, libraryLength: library.length, owned });
+    return owned;
+}
+
+function addToLibrary(productId, title, price, imageUrl){
+    if (isGameOwned(productId, title)) return; // já está na biblioteca
+    const library = getLibrary();
+    library.push({ id: Date.now(), productId: productId || null, title, price: Number(price), image: imageUrl || null, addedAt: new Date().toISOString() });
+    saveLibrary(library);
+    console.log('addToLibrary:', { productId, title, libraryLength: library.length });
+}
+
+function openLibrary(){
+    const user = getCurrentUser();
+    if (!user) return showToast('Você precisa estar logado', 'error');
+    
+    let modal = document.getElementById('libraryPage');
+    if (!modal){
+        modal = document.createElement('div');
+        modal.id = 'libraryPage';
+        modal.className = 'page';
+        modal.style.display = 'none';
+        modal.innerHTML = `
+            <div class="form-container" style="max-width:1000px;">
+                <div class="form-header"><button class="back-btn" onclick="(function(){document.getElementById('libraryPage').style.display='none'; showMainMenu();})()">← Voltar</button><h2>Minha Biblioteca</h2></div>
+                <div id="libraryContent" style="min-height:300px;"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    // renderizar biblioteca
+    const content = modal.querySelector('#libraryContent');
+    const library = getLibrary();
+    content.innerHTML = '';
+    
+    if (!library || library.length === 0){
+        content.innerHTML = '<p style="color:#cfcfcf;text-align:center;">Você ainda não comprou nenhum jogo.</p>';
+    } else {
+        const grid = document.createElement('div');
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+        grid.style.gap = '1rem';
+        
+        library.forEach(game => {
+            const card = document.createElement('div');
+            card.style.background = 'rgba(255,255,255,0.05)';
+            card.style.borderRadius = '8px';
+            card.style.padding = '0.8rem';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.gap = '0.6rem';
+            
+            const img = document.createElement('img');
+            img.src = game.image || `https://via.placeholder.com/200x112?text=${encodeURIComponent(game.title)}`;
+            img.alt = game.title;
+            img.style.width = '100%';
+            img.style.height = '112px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '4px';
+            
+            const title = document.createElement('strong');
+            title.textContent = game.title;
+            title.style.color = '#fff';
+            
+            const added = document.createElement('small');
+            added.style.color = '#999';
+            added.textContent = `Adicionado em ${new Date(game.addedAt).toLocaleDateString('pt-BR')}`;
+            
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-primary';
+            btn.textContent = 'Jogar';
+            btn.style.width = '100%';
+            btn.addEventListener('click', () => showToast(`Iniciando ${game.title}...`, 'success'));
+            
+            card.appendChild(img);
+            card.appendChild(title);
+            card.appendChild(added);
+            card.appendChild(btn);
+            grid.appendChild(card);
+        });
+        
+        content.appendChild(grid);
+    }
+    
+    // mostrar modal
+    try{ document.querySelector('.menu').style.display = 'none'; }catch(e){}
+    modal.style.display = 'flex';
+    modal.setAttribute('role','dialog');
+    modal.setAttribute('aria-modal','true');
+    try{ focusFirstIn(modal); }catch(e){}
+}
+
 /* -------------------- Carrinho (localStorage por usuário) -------------------- */
 function getCartKey(){
     try{ if (window.Cart && typeof Cart.getCartKey === 'function') return Cart.getCartKey(); }catch(e){}
@@ -568,9 +684,15 @@ function saveCart(cart){
 }
 
 function addToCart(productId, title, price, imageUrl){
+    // verificar se o usuário já tem o jogo na biblioteca PRIMEIRO
+    if (isGameOwned(productId, title)) {
+        showToast('Você já possui este jogo em sua biblioteca.', 'warning');
+        return;
+    }
+    
     try{ if (window.Cart && typeof Cart.addToCart === 'function') return Cart.addToCart(productId, title, price, imageUrl); }catch(e){}
     const user = getCurrentUser();
-    if (!user){ showToast('Você está no modo convidado — faça login para salvar o carrinho na sua conta.', 'info', 3000); }
+    if (!user){ showToast('Você está no modo convidado — faça login para salvar o carrinho na sua conta.', 'info', 3000); return; }
     const cart = getCart();
     const existing = cart.find(i => (productId && i.productId === productId) || (!productId && i.title === title) );
     if (existing){ existing.qty = (existing.qty || 1) + 1; if (imageUrl) existing.image = imageUrl; if (productId) existing.productId = productId; }
@@ -638,6 +760,13 @@ function showToastWithAction(message, type='info', actionText=null, actionCb=nul
 function checkout(){
     const cart = getCart();
     if (!cart || cart.length===0) return showToast('Carrinho vazio', 'error');
+    const user = getCurrentUser();
+    // adicionar itens à biblioteca do usuário (se logado)
+    if (user){
+        try{
+            cart.forEach(item => addToLibrary(item.productId || null, item.title, item.price, item.image));
+        }catch(e){ console.error('Erro ao adicionar itens à biblioteca', e); }
+    }
     // simples simulação de checkout
     clearCart();
     showToast('Compra simulada concluída. Obrigado!', 'success');
@@ -755,18 +884,26 @@ function showDetails(productId, title, price, imageUrl, description){
         images = [imageUrl];
     }
 
+    console.log('showDetails images:', { images, imageUrl });
+
     // render gallery
     if (images && images.length){
         m.dataset.images = JSON.stringify(images);
         m.dataset.curIndex = 0;
-        imgEl.style.backgroundImage = `url(${images[0]})`;
+        const bgImageUrl = images[0];
+        imgEl.style.backgroundImage = `url("${bgImageUrl}")`;
         imgEl.style.backgroundSize = 'cover'; imgEl.textContent = '';
         prevBtn.style.display = images.length>1 ? 'block' : 'none';
         nextBtn.style.display = images.length>1 ? 'block' : 'none';
+        console.log('showDetails: image set to', bgImageUrl);
     } else {
         delete m.dataset.images; delete m.dataset.curIndex;
-        if (typeof imageUrl === 'string' && imageUrl){ imgEl.style.backgroundImage = `url(${imageUrl})`; imgEl.style.backgroundSize='cover'; imgEl.textContent=''; }
-        else { imgEl.style.backgroundImage = ''; imgEl.textContent = 'Imagem'; }
+        if (typeof imageUrl === 'string' && imageUrl){ 
+            imgEl.style.backgroundImage = `url("${imageUrl}")`; 
+            imgEl.style.backgroundSize='cover'; imgEl.textContent=''; 
+            console.log('showDetails: fallback image set to', imageUrl);
+        }
+        else { imgEl.style.backgroundImage = ''; imgEl.textContent = 'Imagem'; console.log('showDetails: no image'); }
         prevBtn.style.display = 'none'; nextBtn.style.display = 'none';
     }
 

@@ -724,11 +724,13 @@ function ensureDetailsModal(){
 }
 
 function showDetails(productId, title, price, imageUrl, description){
-    const m = ensureDetailsModal();
-    document.querySelector('.menu').style.display = 'none';
-    m.style.display = 'flex';
-    m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
-    focusFirstIn(m);
+    try{
+        console.debug && console.debug('showDetails called', { productId, title, price, imageUrl, description });
+        const m = ensureDetailsModal();
+        try{ document.querySelector('.menu').style.display = 'none'; }catch(e){}
+        m.style.display = 'flex';
+        m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
+        try{ focusFirstIn(m); }catch(e){}
     const titleEl = m.querySelector('#detailsTitle');
     const imgEl = m.querySelector('#detailsImage');
     const priceEl = m.querySelector('#detailsPrice');
@@ -794,14 +796,19 @@ function showDetails(productId, title, price, imageUrl, description){
     nextBtn.onclick = ()=>{ const cur = Number(m.dataset.curIndex||0); goTo(cur+1); };
 
     // remove previous listeners on add button
-    const newAdd = addBtn.cloneNode(true);
-    addBtn.parentNode.replaceChild(newAdd, addBtn);
-    newAdd.addEventListener('click', ()=>{
-        const imgForCart = (images && images.length) ? images[0] : (typeof imageUrl === 'string' ? imageUrl : null);
-        addToCart(productId || null, title, price || 0, imgForCart);
-        m.style.display = 'none';
-        showMainMenu();
-    });
+    try{
+        const newAdd = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(newAdd, addBtn);
+        newAdd.addEventListener('click', ()=>{
+            try{
+                const imgForCart = (images && images.length) ? images[0] : (typeof imageUrl === 'string' ? imageUrl : null);
+                addToCart(productId || null, title, price || 0, imgForCart);
+                m.style.display = 'none';
+                showMainMenu();
+            }catch(e){ console.error('showDetails -> add to cart failed', e); }
+        });
+    }catch(e){ console.error('showDetails -> wiring add button failed', e); }
+    }catch(e){ console.error('showDetails failed', e); }
 }
 
 /* -------------------- Custom games: allow logged-in users to add games -------------------- */
@@ -826,6 +833,41 @@ function loadCustomGames(){
 // run migration/load immediately so category pages (which run inline scripts after funcao.js) see added games
 try{ loadCustomGames(); }catch(e){}
 
+// Renderiza um card de jogo dinâmico no grid atual (se presente)
+function renderGameCard(game){
+    try{
+        if (!game) return;
+        const grid = document.querySelector('.store-grid');
+        if (!grid) return;
+        const card = document.createElement('article');
+        card.className = 'game-card';
+
+        const thumb = document.createElement('div'); thumb.className = 'thumb';
+        const img = document.createElement('img'); img.loading = 'lazy'; img.alt = game.title || 'Capa';
+        img.src = game.image || `https://via.placeholder.com/640x360?text=${encodeURIComponent(game.title||'Jogo')}`;
+        thumb.appendChild(img);
+
+        const h4 = document.createElement('h4'); h4.textContent = game.title || 'Untitled';
+        const priceEl = document.createElement('p'); priceEl.className = 'price';
+        priceEl.textContent = (Number(game.price) === 0) ? 'Grátis' : `R$ ${Number(game.price).toFixed(2)}`;
+
+        const actions = document.createElement('div'); actions.className = 'card-actions';
+        const buyBtn = document.createElement('button'); buyBtn.className = 'btn btn-primary'; buyBtn.textContent = (Number(game.price) === 0) ? 'Instalar' : 'Comprar';
+        buyBtn.addEventListener('click', ()=>{ try{ addToCart(game.id || null, game.title, game.price || 0, game.image || null); }catch(e){ console.error('addToCart falhou', e); } });
+        const detailsBtn = document.createElement('button'); detailsBtn.className = 'btn'; detailsBtn.textContent = 'Detalhes';
+        detailsBtn.addEventListener('click', ()=>{ try{ showDetails(game.id || null, game.title, game.price || 0, game.image || null, game.description || ''); }catch(e){ console.error('showDetails falhou', e); } });
+        actions.appendChild(buyBtn); actions.appendChild(detailsBtn);
+
+        card.appendChild(thumb);
+        card.appendChild(h4);
+        card.appendChild(priceEl);
+        card.appendChild(actions);
+
+        // insere no topo do grid para visibilidade imediata
+        grid.insertBefore(card, grid.firstChild);
+    }catch(e){ console.warn('renderGameCard failed', e); }
+}
+
 function showAddGameModal(){
     const user = getCurrentUser();
     if (!user) return showToast('Você precisa estar logado para adicionar um jogo.', 'error');
@@ -834,73 +876,43 @@ function showAddGameModal(){
     if (!modal){
         modal = document.createElement('div'); modal.id = 'addGameModal'; modal.className='page'; modal.style.display='none';
         modal.innerHTML = `
-            <div class="form-container" style="max-width:720px;">
-                <div class="form-header"><h2>Adicionar Jogo</h2><button class="back-btn" id="addGameClose">Fechar</button></div>
-                <form id="addGameForm">
-                    <div class="input-group"><label for="agCategory">Categoria</label><select id="agCategory"></select></div>
-                    <div class="input-group"><label for="agId">ID (opcional)</label><input id="agId" type="text" placeholder="ex: indies-123"></div>
-                    <div class="input-group"><label for="agTitle">Título</label><input id="agTitle" type="text" required></div>
-                    <div class="input-group"><label for="agPrice">Preço (use 0 para grátis)</label><input id="agPrice" type="number" step="0.01" required></div>
-                    <div class="input-group"><label for="agImage">URL da imagem (opcional)</label><input id="agImage" type="text"></div>
-                    <div class="input-group"><label for="agDesc">Descrição</label><textarea id="agDesc" rows="4"></textarea></div>
-                    <div style="display:flex;gap:0.6rem;justify-content:flex-end;margin-top:0.6rem;"><button class="btn" type="button" id="addGameCancel">Cancelar</button><button class="btn btn-primary" type="submit">Adicionar</button></div>
-                </form>
-            </div>
-        `;
+                <div class="form-container" style="max-width:720px;">
+                    <div class="form-header"><h2>Adicionar Jogo</h2><button class="back-btn" id="addGameClose">Fechar</button></div>
+                    <form id="addGameForm">
+                        <div class="input-group"><label for="agId">ID (opcional)</label><input id="agId" type="text" placeholder="ex: indies-123"></div>
+                        <div class="input-group"><label for="agTitle">Título</label><input id="agTitle" type="text" required></div>
+                        <div class="input-group"><label for="agPrice">Preço (use 0 para grátis)</label><input id="agPrice" type="number" step="0.01" required></div>
+                        <div class="input-group"><label for="agImage">URL da imagem (opcional)</label><input id="agImage" type="text"></div>
+                        <div class="input-group"><label for="agDesc">Descrição</label><textarea id="agDesc" rows="4"></textarea></div>
+                        <div style="display:flex;gap:0.6rem;justify-content:flex-end;margin-top:0.6rem;"><button class="btn" type="button" id="addGameCancel">Cancelar</button><button class="btn btn-primary" type="submit">Adicionar</button></div>
+                    </form>
+                </div>
+            `;
         document.body.appendChild(modal);
         modal.querySelector('#addGameClose').addEventListener('click', ()=>{ modal.style.display='none'; showMainMenu(); });
         modal.querySelector('#addGameCancel').addEventListener('click', ()=>{ modal.style.display='none'; showMainMenu(); });
         modal.querySelector('#addGameForm').addEventListener('submit', handleAddGameSubmit);
     }
-    // populate categories select
-    const sel = modal.querySelector('#agCategory'); sel.innerHTML='';
-    if (window.CATEGORIES){
-        Object.keys(CATEGORIES).forEach(k=>{
-            const opt = document.createElement('option'); opt.value = k; opt.textContent = CATEGORIES[k].title || k; sel.appendChild(opt);
-        });
-    }
-    document.querySelector('.menu').style.display = 'none';
-    modal.style.display = 'flex'; modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); focusFirstIn(modal);
-}
-
-// Renderiza um card de jogo (mesma estrutura usada em categories.html)
-function renderGameCard(g){
-    try{
-        const grid = document.getElementById('category-grid');
-        if (!grid) return; // só renderizar quando estivermos na página de categoria
-        // se a categoria atual da página não corresponder, não inserir
-        const catTitleEl = document.getElementById('category-title');
-        const currentCat = catTitleEl ? catTitleEl.textContent : null;
-        const targetCat = (CATEGORIES && CATEGORIES[g.category]) ? CATEGORIES[g.category].title : null;
-        if (targetCat && currentCat && targetCat !== currentCat) return;
-
-        const a = document.createElement('article'); a.className = 'game-card';
-        const thumb = document.createElement('div'); thumb.className = 'thumb'; thumb.style.background = 'linear-gradient(135deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12))';
-        thumb.setAttribute('role','img'); thumb.setAttribute('aria-label', g.title + ' - imagem');
-        if (g.image){ thumb.textContent = ''; const img = document.createElement('img'); img.src = g.image; img.loading='lazy'; img.alt = g.title || 'Capa do jogo'; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; thumb.appendChild(img); }
-        else { thumb.textContent = 'Thumb'; }
-        const h = document.createElement('h4'); h.textContent = g.title;
-        const p = document.createElement('p'); p.className = 'price'; p.textContent = g.price ? `R$ ${Number(g.price).toFixed(2)}` : 'Grátis';
-        const actions = document.createElement('div'); actions.className = 'card-actions';
-        const buy = document.createElement('button'); buy.className = 'btn btn-primary'; buy.textContent = g.price && g.price>0 ? 'Comprar' : 'Instalar';
-        buy.addEventListener('click', ()=> addToCart(g.id, g.title, g.price || 0, g.image || null));
-        const details = document.createElement('button'); details.className='btn'; details.textContent = 'Detalhes'; details.addEventListener('click', ()=> showDetails(g.id, g.title, g.price || 0, g.image || null, g.description || ''));
-        actions.appendChild(buy); actions.appendChild(details);
-        a.appendChild(thumb); a.appendChild(h); a.appendChild(p); a.appendChild(actions);
-        grid.appendChild(a);
-    }catch(e){ console.warn('renderGameCard error', e); }
+    // mostrar modal e ajustar acessibilidade
+    try{ document.querySelector('.menu').style.display = 'none'; }catch(e){}
+    modal.style.display = 'flex';
+    modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+    try{ focusFirstIn(modal); }catch(e){}
+    // nota: categoria não é mais solicitada ao usuário — será atribuída automaticamente
 }
 
 function handleAddGameSubmit(ev){
     ev.preventDefault();
     const modal = document.getElementById('addGameModal'); if (!modal) return;
     const idIn = modal.querySelector('#agId').value.trim();
-    const category = modal.querySelector('#agCategory').value;
     const title = modal.querySelector('#agTitle').value.trim();
     const price = Number(modal.querySelector('#agPrice').value) || 0;
     const image = modal.querySelector('#agImage').value.trim() || null;
     const desc = modal.querySelector('#agDesc').value.trim() || '';
-    if (!title || !category) return showToast('Preencha categoria e título', 'error');
+    // categoria padrão: primeira chave de CATEGORIES quando disponível, senão 'indies'
+    let category = 'indies';
+    try{ if (window.CATEGORIES && Object.keys(CATEGORIES).length) category = Object.keys(CATEGORIES)[0]; }catch(e){}
+    if (!title) return showToast('Preencha o título', 'error');
     const gid = idIn || `${category}-${Date.now()}`;
     const game = { id: gid, title, price, image, description: desc, category };
     try{
@@ -909,9 +921,13 @@ function handleAddGameSubmit(ev){
         const arr = JSON.parse(raw);
         arr.push(game);
         localStorage.setItem('gs_custom_games', JSON.stringify(arr));
-        // also inject into in-memory CATEGORIES so pages using CATEGORIES will see it
-        if (!CATEGORIES[category]) CATEGORIES[category] = { key: category, title: category, scheme:'scheme-custom', description:'Categoria criada', games: [] };
-        CATEGORIES[category].games.push(game);
+        // also inject into in-memory CATEGORIES so pages using CATEGORIES will see it (guard when CATEGORIES not loaded)
+        try{
+            if (window.CATEGORIES) {
+                if (!CATEGORIES[category]) CATEGORIES[category] = { key: category, title: category, scheme:'scheme-custom', description:'Categoria criada', games: [] };
+                CATEGORIES[category].games.push(game);
+            }
+        }catch(e){ console.warn('Não foi possível atualizar CATEGORIES em memória', e); }
         // fechar modal e atualizar UI dinamicamente quando possível
         modal.style.display='none'; showMainMenu();
         showToast('Jogo adicionado com sucesso!', 'success');
@@ -919,3 +935,14 @@ function handleAddGameSubmit(ev){
         try{ renderGameCard(game); }catch(e){ /* fallback silencioso */ }
     }catch(e){ console.error('Erro ao adicionar jogo', e); showToast('Erro ao adicionar jogo', 'error'); }
 }
+
+// Garantir que `addToCart` global aponte para a implementação canônica em `Cart` quando disponível.
+try{
+    if (window.Cart && typeof Cart.addToCart === 'function') {
+        window.addToCart = function(productId, title, price, imageUrl){
+            try{ return Cart.addToCart(productId, title, price, imageUrl); }catch(e){ console.error('addToCart wrapper -> Cart.addToCart falhou', e); }
+            // fallback para a implementação local (se existir)
+            try{ if (typeof addToCart === 'function') return addToCart(productId, title, price, imageUrl); }catch(e){}
+        };
+    }
+}catch(e){}

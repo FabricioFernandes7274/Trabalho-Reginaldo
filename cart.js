@@ -18,16 +18,19 @@
     Cart.saveCart = function(cart){
         const key = Cart.getCartKey();
         if (!key) return;
-        localStorage.setItem(key, JSON.stringify(cart));
-        Cart.updateCartBadge();
+        try{
+            localStorage.setItem(key, JSON.stringify(cart));
+        }catch(e){ console.error('Cart.saveCart: falha ao gravar localStorage', e); }
+        try{ Cart.updateCartBadge(); }catch(e){ console.error('Cart.saveCart: updateCartBadge falhou', e); }
     };
 
     Cart.addToCart = function(productId, title, price, imageUrl){
+        try{ console.debug('Cart.addToCart called', { productId, title, price, imageUrl }); }catch(e){}
         const cart = Cart.getCart();
         const existing = cart.find(i => (productId && i.productId === productId) || (!productId && i.title === title) );
         if (existing){ existing.qty = (existing.qty||1) + 1; if (imageUrl) existing.image = imageUrl; if (productId) existing.productId = productId; }
         else cart.push({ id: Date.now(), productId: productId || null, title, price: Number(price), qty: 1, image: imageUrl || null });
-        Cart.saveCart(cart);
+        try{ Cart.saveCart(cart); }catch(e){ console.error('Cart.addToCart: saveCart falhou', e); }
         // preserve the original toast API by calling global function if available
         try{ if (window.showToastWithAction) showToastWithAction('Item adicionado ao carrinho', 'success', null); }catch(e){}
         Cart.updateCartBadge();
@@ -59,7 +62,18 @@
         const key = Cart.getCartKey(); if (!key) return; localStorage.removeItem(key); try{ if (window.renderCart) renderCart(); }catch(e){}; Cart.updateCartBadge();
     };
 
-    Cart.openCart = function(){ try{ if (window.openCart) return openCart(); }catch(e){} };
+    Cart.openCart = function(){
+        try{
+            const el = document.getElementById('cartPage');
+            if (!el) return;
+            try{ document.querySelector('.menu').style.display = 'none'; }catch(e){}
+            el.style.display = 'flex';
+            el.setAttribute('role','dialog');
+            el.setAttribute('aria-modal','true');
+            try{ if (window.focusFirstIn) focusFirstIn(el); }catch(e){}
+            try{ Cart.renderCart(); }catch(e){}
+        }catch(e){ console.error('Cart.openCart falhou', e); }
+    };
 
     Cart.renderCart = function(){
         // mirror previous renderCart behavior but kept here

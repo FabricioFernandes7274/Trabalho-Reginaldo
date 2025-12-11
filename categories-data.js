@@ -37,7 +37,6 @@ const CATEGORIES = {
         { id: 'infantil-0', title:'Jp goods', price:0, image:'Imagens/infantil-0.png', description:'Brinque e aprenda com cores e formas no bobby goods vendido por JP.' }
     ]},
     carros:{ key:'carros', title:'Carros', scheme:'scheme-carros', description:'Corridas e velocidade.', games:[
-        { id: 'carros-0', title:'O grupo da morte', price:19.90, image:'Imagens/carros-0.png', description:'Sobreviva a mais uma semana de apresentação nesse caos.' },
         { id: 'carros-1', title:'Palio de Meu fio', price:19.90, image:'Imagens/carros-1.png', description:'Corra em diversas pistas enquanto leva sua filha na escola e vai trabalhar.' }
     ]},
     estrategia:{ key:'estrategia', title:'Estratégia / Turnos', scheme:'scheme-estrategia', description:'Planejamento e tática.', games:[

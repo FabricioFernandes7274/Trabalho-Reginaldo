@@ -19,7 +19,7 @@ const CATEGORIES = {
     ]},
     esporte:{ key:'esporte', title:'Esporte', scheme:'scheme-esporte', description:'Modalidades esportivas e simulações.', games:[
         { id: 'esporte-0', title:'Futebol dos negos', price:129.90, image:'Imagens/esporte-0.png', description:'Simulação de futebol com modos carreira e multiplayer com os 11 negos.'},
-            {id: 'esporte-1', title:'Volei dos negos', price:29.90, image:'Imagens/esporte-0.png', description:'O interclasse está a milhão com os negos dominando tudo.'}
+            {id: 'esporte-1', title:'Volei dos negos', price:29.90, image:'Imagens/esporte-1.png', description:'O interclasse está a milhão com os negos dominando tudo.'}
     ]},
     'visual-novel':{ key:'visual-novel', title:'Visual Novel', scheme:'scheme-visual-novel', description:'Experiências narrativas e relacionamento.', games:[
         { id: 'visual-novel-0', title:'As brancas', price:29.90, image:'Imagens/visual-novel-0.png', description:'Veja a história das brancas desde o 1 ano até o 3 nessa historia emocionante.' }
